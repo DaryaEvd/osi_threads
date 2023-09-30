@@ -1,0 +1,98 @@
+1.1
+  a) Оба потока не выполнялись одновременно, потому что главный 
+    main() завершался быстрее.
+
+  c) Используем функцию pthread_equal, потому что 
+  " the definition of pthread_t is implementation dependent", 
+  "It might be a struct. It might be a pointer. It might be a pointer to a struct held somewhere"
+  https://stackoverflow.com/questions/37675763/why-cannot-i-directly-compare-2-thread-ids-instead-of-using-pthread-equal
+
+  e)
+  cat /proc/12697/maps
+556c31906000-556c31907000 r--p 00000000 08:06 28216466                   /home/dasha/third/osi/labs/lab1/code/1.1/thread-example
+556c31907000-556c31908000 r-xp 00001000 08:06 28216466                   /home/dasha/third/osi/labs/lab1/code/1.1/thread-example
+556c31908000-556c31909000 r--p 00002000 08:06 28216466                   /home/dasha/third/osi/labs/lab1/code/1.1/thread-example
+556c31909000-556c3190a000 r--p 00002000 08:06 28216466                   /home/dasha/third/osi/labs/lab1/code/1.1/thread-example
+556c3190a000-556c3190b000 rw-p 00003000 08:06 28216466  --global/static vars --         /home/dasha/third/osi/labs/lab1/code/1.1/thread-example
+556c3387f000-556c338a0000 rw-p 00000000 00:00 0                          [heap]
+7fab95922000-7fab95923000 ---p 00000000 00:00 0 
+7fab95923000-7fab96123000 rw-p 00000000 00:00 0         --pthread local vars --
+7fab96123000-7fab96124000 ---p 00000000 00:00 0 
+7fab96124000-7fab96924000 rw-p 00000000 00:00 0 
+7fab96924000-7fab96925000 ---p 00000000 00:00 0 
+7fab96925000-7fab97125000 rw-p 00000000 00:00 0 
+7fab97125000-7fab97126000 ---p 00000000 00:00 0 
+7fab97126000-7fab97926000 rw-p 00000000 00:00 0 
+7fab97926000-7fab97927000 ---p 00000000 00:00 0 
+7fab97927000-7fab9812a000 rw-p 00000000 00:00 0 
+7fab9812a000-7fab9814c000 r--p 00000000 08:06 19405756                   /usr/lib/x86_64-linux-gnu/libc-2.31.so
+7fab9814c000-7fab982c4000 r-xp 00022000 08:06 19405756                   /usr/lib/x86_64-linux-gnu/libc-2.31.so
+7fab982c4000-7fab98312000 r--p 0019a000 08:06 19405756                   /usr/lib/x86_64-linux-gnu/libc-2.31.so
+7fab98312000-7fab98316000 r--p 001e7000 08:06 19405756                   /usr/lib/x86_64-linux-gnu/libc-2.31.so
+7fab98316000-7fab98318000 rw-p 001eb000 08:06 19405756                   /usr/lib/x86_64-linux-gnu/libc-2.31.so
+7fab98318000-7fab9831c000 rw-p 00000000 00:00 0 
+7fab9831c000-7fab98322000 r--p 00000000 08:06 19413068                   /usr/lib/x86_64-linux-gnu/libpthread-2.31.so
+7fab98322000-7fab98333000 r-xp 00006000 08:06 19413068                   /usr/lib/x86_64-linux-gnu/libpthread-2.31.so
+7fab98333000-7fab98339000 r--p 00017000 08:06 19413068                   /usr/lib/x86_64-linux-gnu/libpthread-2.31.so
+7fab98339000-7fab9833a000 r--p 0001c000 08:06 19413068                   /usr/lib/x86_64-linux-gnu/libpthread-2.31.so
+7fab9833a000-7fab9833b000 rw-p 0001d000 08:06 19413068                   /usr/lib/x86_64-linux-gnu/libpthread-2.31.so
+7fab9833b000-7fab98341000 rw-p 00000000 00:00 0 
+7fab9836c000-7fab9836d000 r--p 00000000 08:06 19400874                   /usr/lib/x86_64-linux-gnu/ld-2.31.so
+7fab9836d000-7fab98390000 r-xp 00001000 08:06 19400874                   /usr/lib/x86_64-linux-gnu/ld-2.31.so
+7fab98390000-7fab98398000 r--p 00024000 08:06 19400874                   /usr/lib/x86_64-linux-gnu/ld-2.31.so
+7fab98399000-7fab9839a000 r--p 0002c000 08:06 19400874                   /usr/lib/x86_64-linux-gnu/ld-2.31.so
+7fab9839a000-7fab9839b000 rw-p 0002d000 08:06 19400874                   /usr/lib/x86_64-linux-gnu/ld-2.31.so
+7fab9839b000-7fab9839c000 rw-p 00000000 00:00 0 
+7ffffc42e000-7ffffc44f000 rw-p 00000000 00:00 0      --main thread local vars--                    [stack]
+7ffffc56a000-7ffffc56e000 r--p 00000000 00:00 0                          [vvar]
+7ffffc56e000-7ffffc570000 r-xp 00000000 00:00 0                          [vdso]
+ffffffffff600000-ffffffffff601000 --xp 00000000 00:00 0                  [vsyscall]
+
+
+main [pid: 12697, ppid: 10367, tpid: 12697]: Hello from main!
+thread [pid: 12697, ppid: 10367, tpid: 12700]: Hello from main!
+thread [pid: 12697, ppid: 10367, tpid: 12702]: Hello from main!
+    pthread_self: 140374933907200
+                thread global
+         val: 80         addr: 0x556c3190a010
+                 thread local
+         val: 70         addr: 0x7fab96121ed0
+                 thread constLocalVar
+         val: 1000       addr: 0x7fab96121ed4
+                 thread localStaticVar
+         val: 8          addr: 0x556c3190a014
+thread [pid: 12697, ppid: 10367, tpid: 12698]: Hello from main!
+    pthread_self: 140374967478016
+                thread global
+         val: 80         addr: 0x556c3190a010
+                 thread local
+         val: 70         addr: 0x7fab98125ed0
+                 thread constLocalVar
+         val: 1000       addr: 0x7fab98125ed4
+                 thread localStaticVar
+         val: 8          addr: 0x556c3190a014
+thread [pid: 12697, ppid: 10367, tpid: 12701]: Hello from main!
+    pthread_self: 140374942299904
+                thread global
+         val: 80         addr: 0x556c3190a010
+                 thread local
+         val: 7          addr: 0x7fab96922ed0
+                 thread constLocalVar
+         val: 1000       addr: 0x7fab96922ed4
+                 thread localStaticVar
+         val: 8          addr: 0x556c3190a014
+thread [pid: 12697, ppid: 10367, tpid: 12699]: Hello from main!
+    pthread_self: 140374959085312
+                thread global
+         val: 80         addr: 0x556c3190a010
+                 thread local
+         val: 7          addr: 0x7fab97924ed0
+                 thread constLocalVar
+         val: 1000       addr: 0x7fab97924ed4
+                 thread localStaticVar
+         val: 8          addr: 0x556c3190a014
+    pthread_self: 140374950692608
+                thread global
+         val: 80         addr: 0x556c3190a010
+                 thread local
+
