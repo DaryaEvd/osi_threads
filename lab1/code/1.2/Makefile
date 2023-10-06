@@ -10,8 +10,8 @@ SRCS = c.c
 TARGET4 = d
 SRCS = d.c
 
-# TARGET5 = e
-# SRCS = e.c
+TARGET5 = e
+SRCS = e.c
 
 # TARGET6 = f
 # SRCS = f.c
@@ -28,7 +28,7 @@ all:
 	${CC} ${CFLAGS} -I${INCLUDE_DIR} ${SRCS} ${LIBS} -o ${TARGET2}
 	${CC} ${CFLAGS} -I${INCLUDE_DIR} ${SRCS} ${LIBS} -o ${TARGET3}
 	${CC} ${CFLAGS} -I${INCLUDE_DIR} ${SRCS} ${LIBS} -o ${TARGET4}
-	# ${CC} ${CFLAGS} -I${INCLUDE_DIR} ${SRCS} ${LIBS} -o ${TARGET5}
+	${CC} ${CFLAGS} -I${INCLUDE_DIR} ${SRCS} ${LIBS} -o ${TARGET5}
 	# ${CC} ${CFLAGS} -I${INCLUDE_DIR} ${SRCS} ${LIBS} -o ${TARGET6}
 
 clean:
@@ -36,5 +36,5 @@ clean:
 	${RM} -f *.o ${TARGET2}
 	${RM} -f *.o ${TARGET3}
 	${RM} -f *.o ${TARGET4}
-	# ${RM} -f *.o ${TARGET5}
+	${RM} -f *.o ${TARGET5}
 	# ${RM} -f *.o ${TARGET6}
