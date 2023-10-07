@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
 
   pthread_t tid;
   if (pthread_create(&tid, NULL, routine, &phonebook) != 0) {
-    perror("pthread crate() error");
+    perror("pthread create() error");
     return -1;
   }
 
