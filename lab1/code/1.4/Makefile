@@ -4,7 +4,7 @@ SRCS1 = a.c
 TARGET2 = b.o
 SRCS2 = b.c
 
-# TARGET3 = c
+# TARGET3 = c.o
 # SRCS3 = c.c
 
 CC=gcc

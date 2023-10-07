@@ -1,12 +1,4 @@
 1.1
-  a) Оба потока не выполнялись одновременно, потому что главный 
-    main() завершался быстрее.
-
-  c) Используем функцию pthread_equal, потому что 
-  " the definition of pthread_t is implementation dependent", 
-  "It might be a struct. It might be a pointer. It might be a pointer to a struct held somewhere"
-  https://stackoverflow.com/questions/37675763/why-cannot-i-directly-compare-2-thread-ids-instead-of-using-pthread-equal
-
   e)
   cat /proc/12697/maps
 556c31906000-556c31907000 r--p 00000000 08:06 28216466                   /home/dasha/third/osi/labs/lab1/code/1.1/thread-example
