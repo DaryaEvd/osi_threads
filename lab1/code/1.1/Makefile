@@ -1,4 +1,4 @@
-TARGET = thread-example
+TARGET = thread-example.o
 SRCS = thread.c
 
 CC=gcc

@@ -1,19 +1,19 @@
-TARGET1 = a
+TARGET1 = a.o
 SRCS1 = a.c
 
-TARGET2 = b
+TARGET2 = b.o
 SRCS2 = b.c
 
-TARGET3 = c
+TARGET3 = c.o
 SRCS3 = c.c
 
-TARGET4 = d
+TARGET4 = d.o
 SRCS4 = d.c
 
-TARGET5 = e
+TARGET5 = e.o
 SRCS5 = e.c
 
-TARGET6 = f
+TARGET6 = f.o
 SRCS6 = f.c
 
 CC=gcc

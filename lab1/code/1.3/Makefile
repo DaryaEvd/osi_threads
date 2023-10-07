@@ -1,7 +1,7 @@
-TARGET1 = a
+TARGET1 = a.o
 SRCS1 = a.c
 
-TARGET2 = b
+TARGET2 = b.o
 SRCS2 = b.c
 
 CC=gcc
