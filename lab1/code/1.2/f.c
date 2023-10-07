@@ -14,14 +14,27 @@ void *routine(void *arg) {
 }
 
 int main(int argc, char **argv) {
-  pthread_t tid;
-  while (1) {
+  pthread_attr_t attrs;
+  if (pthread_attr_init(&attrs) != 0) {
+    perror("pthread_attr_init() error");
+    return -1;
+  }
 
+  if (pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED) !=
+      0) {
+    perror("pthread_attr_setdetachstate() error");
+    return -1;
+  }
+
+  pthread_t tid;
+
+  while (1) {
     if (pthread_create(&tid, NULL, routine, NULL) != 0) {
       perror("pthread_create() error");
       return -1;
     }
   }
 
+  pthread_attr_destroy(&attrs);
   pthread_exit(NULL);
 }

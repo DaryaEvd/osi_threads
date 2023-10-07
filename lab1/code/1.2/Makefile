@@ -1,20 +1,20 @@
 TARGET1 = a
-SRCS = a.c
+SRCS1 = a.c
 
 TARGET2 = b
-SRCS = b.c
+SRCS2 = b.c
 
 TARGET3 = c
-SRCS = c.c
+SRCS3 = c.c
 
 TARGET4 = d
-SRCS = d.c
+SRCS4 = d.c
 
 TARGET5 = e
-SRCS = e.c
+SRCS5 = e.c
 
-# TARGET6 = f
-# SRCS = f.c
+TARGET6 = f
+SRCS6 = f.c
 
 CC=gcc
 RM=rm
@@ -24,12 +24,12 @@ INCLUDE_DIR="."
 
 # all: ${TARGET1}
 all:
-	${CC} ${CFLAGS} -I${INCLUDE_DIR} ${SRCS} ${LIBS} -o ${TARGET1}
-	${CC} ${CFLAGS} -I${INCLUDE_DIR} ${SRCS} ${LIBS} -o ${TARGET2}
-	${CC} ${CFLAGS} -I${INCLUDE_DIR} ${SRCS} ${LIBS} -o ${TARGET3}
-	${CC} ${CFLAGS} -I${INCLUDE_DIR} ${SRCS} ${LIBS} -o ${TARGET4}
-	${CC} ${CFLAGS} -I${INCLUDE_DIR} ${SRCS} ${LIBS} -o ${TARGET5}
-	# ${CC} ${CFLAGS} -I${INCLUDE_DIR} ${SRCS} ${LIBS} -o ${TARGET6}
+	${CC} ${CFLAGS} -I${INCLUDE_DIR} ${SRCS1} ${LIBS} -o ${TARGET1}
+	${CC} ${CFLAGS} -I${INCLUDE_DIR} ${SRCS2} ${LIBS} -o ${TARGET2}
+	${CC} ${CFLAGS} -I${INCLUDE_DIR} ${SRCS3} ${LIBS} -o ${TARGET3}
+	${CC} ${CFLAGS} -I${INCLUDE_DIR} ${SRCS4} ${LIBS} -o ${TARGET4}
+	${CC} ${CFLAGS} -I${INCLUDE_DIR} ${SRCS5} ${LIBS} -o ${TARGET5}
+	${CC} ${CFLAGS} -I${INCLUDE_DIR} ${SRCS6} ${LIBS} -o ${TARGET6}
 
 clean:
 	${RM} -f *.o ${TARGET1}
@@ -37,4 +37,4 @@ clean:
 	${RM} -f *.o ${TARGET3}
 	${RM} -f *.o ${TARGET4}
 	${RM} -f *.o ${TARGET5}
-	# ${RM} -f *.o ${TARGET6}
+	${RM} -f *.o ${TARGET6}
