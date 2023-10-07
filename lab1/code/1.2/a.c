@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
   printf("Hello from main after creatinfg a thread\n");
 
   if (pthread_join(tid, &ret) != 0) {
-    perror("pthread_create() error");
+    perror("pthread_join() error"); //FIX!!!
     return -1;
   }
 

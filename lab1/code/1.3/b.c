@@ -14,6 +14,7 @@ typedef struct MyStruct {
 void *routine(void *arg) {
   printf("in created thread: name is '%s'; number is '%d'\n",
          ((PhoneBook *)arg)->name, ((PhoneBook *)arg)->number);
+  free(arg);
   return NULL;
 }
 
@@ -42,13 +43,12 @@ int main(int argc, char **argv) {
     perror("pthread_attr_setdetachstate error()");
     return -1;
   }
-
-  if (pthread_create(&tid, NULL, routine, &phonebook) != 0) {
+  pthread_attr_destroy(&attrs);
+  
+  if (pthread_create(&tid, NULL, routine, phonebook) != 0) {
     perror("pthread create() error");
     return -1;
   }
 
-  free(phonebook);
-  pthread_attr_destroy(&attrs);
   pthread_exit(NULL);
 }

@@ -11,7 +11,7 @@ void *routine(void *args) {
   //   perror("pthread_setcanceltype() error");
   //   return NULL;
   // }
-
+/*с deffered сделать !!!!!!!!*/
   int counter = 0;
   while (1) {
     counter++;
