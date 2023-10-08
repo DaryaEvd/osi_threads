@@ -7,15 +7,22 @@
 #include <unistd.h>
 
 void *routine(void *args) {
-  // if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL) != 0) {
+  // if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL) !=
+  // 0) {
   //   perror("pthread_setcanceltype() error");
   //   return NULL;
   // }
-/*с deffered сделать !!!!!!!!*/
+
+  /*с deffered сделать !!!!!!!!*/
+
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+
   int counter = 0;
   while (1) {
     counter++;
+    pthread_testcancel();
   }
+
 }
 
 int main() {
@@ -26,8 +33,13 @@ int main() {
     return -1;
   }
 
-  if (pthread_cancel(tid) != 0) {
+  if (pthread_cancel(tid) != 0) { // запрос на завершение потока
     perror("pthread_cancel() error");
+    return -1;
+  }
+
+  if(pthread_join(tid, NULL) != 0) {
+    perror("pthread_join() error");
     return -1;
   }
 
