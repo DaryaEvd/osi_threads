@@ -2,24 +2,34 @@
 #include <errno.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
 
+static void clean_handler(void *arg) {
+  free((char *)arg);
+  printf("clean handler finished\n");
+}
+
 void *routine(void *args) {
-  // if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL) !=
-  // 0) {
-  //   perror("pthread_setcanceltype() error");
-  //   return NULL;
-  // }
+  const int strLength = 12;
+  char *str = malloc(sizeof(char) * strLength);
+  if (!str) {
+    perror("malloc() error");
+    return NULL;
+  }
 
-  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+  str = strncpy(str, "hello World", strLength);
 
-  int counter = 0;
+  pthread_cleanup_push(clean_handler, str);
+
   while (1) {
-    counter++;
+    printf("%s\n", str);
     pthread_testcancel();
   }
+
+  pthread_cleanup_pop(1);
   return NULL;
 }
 

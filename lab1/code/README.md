@@ -77,7 +77,7 @@ pthread_create() error: Cannot allocate memory
 ### про cancellation and printf  
 - Посмотреть осуждение на [stackoverflow](https://stackoverflow.com/questions/17208690/cancelling-a-pthread-and-printf-behaviour)  
 - почитать про [cancellation point](https://stackoverflow.com/questions/27374707/what-exactly-is-a-cancellation-point#comment43199960_27374707)(!!!).  
-- еще одно обсуждение на [оверфлоу](https://stackoverflow.com/questions/23220206/what-are-pthread-cancelation-points-used-for) + там про PTHREAD_CANCEL_ASYNCHRONOUS есть  
+- еще одно обсуждение на [оверфлоу](https://stackoverflow.com/questions/23220206/what-are-pthread-cancelation-points-used-for) + там про `PTHREAD_CANCEL_ASYNCHRONOUS` есть  
 
 #### Важно  
 When your thread gets pulled from execution, its state is saved by the OS and that is not a cancellation of the thread. The cancellation means thread termination, on request, with the specific intent of letting everything in a final state when completed (aka. all resources are freed, all handlers are updated, etc.).
@@ -88,5 +88,6 @@ Example: The thread gets a cancellation request. The OS queues it until the thre
 
 While the cancellation procedure is running, the thread can be blocked as many times as the OS sees fit.  
 
-PTHREAD_CANCEL_ASYNCHRONOUS is another ball of wax and nightmare of its own. Conceptually you can almost think of this as the thread getting blasted by a kill signal - it can be interrupted anywhere - but it does provide the opportunity for the cleanup handlers to run. The problem is that it is really hard to do that e.g. what if it is canceled in the middle of a malloc? This makes it pretty much useless outside of some really, really, carefully considered situations.
+`PTHREAD_CANCEL_ASYNCHRONOUS` is another ball of wax and nightmare of its own. Conceptually you can almost think of this as the thread getting blasted by a kill signal - it can be interrupted anywhere - but it does provide the opportunity for the cleanup handlers to run. The problem is that it is really hard to do that e.g. what if it is canceled in the middle of a malloc? This makes it pretty much useless outside of some really, really, carefully considered situations.
 
+Посмотреть [ответ](https://stackoverflow.com/questions/74100179/usage-of-pthread-cleanup-push-and-pthread-cleanup-pop) про `pthread_cleanup_push` and `pthread_cleanup_pop`.  
