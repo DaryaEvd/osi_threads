@@ -24,6 +24,11 @@ int main() {
     perror("pthread_cancel() error");
     return -1;
   }
+  
+  if (pthread_join(tid, NULL) != 0) {
+    perror("pthread_join() error");
+    return -1;
+  }
 
   pthread_exit(NULL);
 }

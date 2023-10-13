@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-static void clean_handler(void *arg) {
+static void cleanupHandler(void *arg) {
   free((char *)arg);
   printf("clean handler finished\n");
 }
@@ -22,7 +22,7 @@ void *routine(void *args) {
 
   str = strncpy(str, "hello World", strLength);
 
-  pthread_cleanup_push(clean_handler, str);
+  pthread_cleanup_push(cleanupHandler, str);
 
   while (1) {
     printf("%s\n", str);

@@ -4,6 +4,7 @@
 - [САЙТ-НАХОДКА](https://w3.cs.jmu.edu/kirkpams/OpenCSF/Books/csf/html/index.html) - в частности, смотреть [главу 6](https://w3.cs.jmu.edu/kirkpams/OpenCSF/Books/csf/html/ThreadsOverview.html)  
 - [Чёт с итмо](https://se.ifmo.ru/~ad/Education_Information/System_Soft/Mod_8/Unix/Part3/preparing3.html)  
 - [Какое-то уч пособие](https://portal.tpu.ru/SHARED/v/VSS/Study_work/OS/Tab/lab3.pdf)  
+- [Oracle](https://docs.oracle.com/cd/E19683-01/806-6867/index.html)  
 
 
 ### Откопать потом   
@@ -77,7 +78,12 @@ pthread_create() error: Cannot allocate memory
 ### про cancellation and printf  
 - Посмотреть осуждение на [stackoverflow](https://stackoverflow.com/questions/17208690/cancelling-a-pthread-and-printf-behaviour)  
 - почитать про [cancellation point](https://stackoverflow.com/questions/27374707/what-exactly-is-a-cancellation-point#comment43199960_27374707)(!!!).  
-- еще одно обсуждение на [оверфлоу](https://stackoverflow.com/questions/23220206/what-are-pthread-cancelation-points-used-for) + там про `PTHREAD_CANCEL_ASYNCHRONOUS` есть  
+- еще одно обсуждение на [оверфлоу](https://stackoverflow.com/questions/23220206/what-are-pthread-cancelation-points-used-for) + там про `PTHREAD_CANCEL_ASYNCHRONOUS` есть.
+- [хорошо написано](https://intuit.ru/studies/courses/570/426/lecture/9691?page=4) про cancelllation
+- use `man pthreads 7` to see the list of functions that are cancellation points
+- юз [ман на рашн](https://manpages.debian.org/bullseye-backports/manpages-ru-dev/pthread_cancel.3.ru.html) эбаут pthread_cancel()
+
+
 
 #### Важно  
 When your thread gets pulled from execution, its state is saved by the OS and that is not a cancellation of the thread. The cancellation means thread termination, on request, with the specific intent of letting everything in a final state when completed (aka. all resources are freed, all handlers are updated, etc.).
@@ -91,3 +97,10 @@ While the cancellation procedure is running, the thread can be blocked as many t
 `PTHREAD_CANCEL_ASYNCHRONOUS` is another ball of wax and nightmare of its own. Conceptually you can almost think of this as the thread getting blasted by a kill signal - it can be interrupted anywhere - but it does provide the opportunity for the cleanup handlers to run. The problem is that it is really hard to do that e.g. what if it is canceled in the middle of a malloc? This makes it pretty much useless outside of some really, really, carefully considered situations.
 
 Посмотреть [ответ](https://stackoverflow.com/questions/74100179/usage-of-pthread-cleanup-push-and-pthread-cleanup-pop) про `pthread_cleanup_push` and `pthread_cleanup_pop`.  
+
+### Про сигналы   
+- [С оракла](https://docs.oracle.com/cd/E19455-01/806-5257/6je9h033a/index.html), + есть таблица *Async-Signal-Safe Functions*  
+- [Какая-то статья](https://devarea.com/linux-handling-signals-in-a-multithreaded-application/)  
+- Чтоб понять `pthread_sigmask` можно сразу смотреть `man sigprocmask 2`
+
+
