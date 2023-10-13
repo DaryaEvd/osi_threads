@@ -12,19 +12,40 @@
 #define USES_SIGNAL_HANDLER 2
 #define USES_SIGWAIT 3
 
-void *blockSignalsRouting(void *args) {
-  sigset_t
-      set; // A set of signals to be blocked, unblocked, or waited for
+#define AMOUNT_TIMES 5
 
-  pthread_sigmask(SIG_BLOCK, &set, NULL);
-
-  int counter1 = 0;
-  while (1) {
-    counter1++;
-  }
+void allProcsHandler(int signum) {
+  const char *msg = "Recieved SIGINT signal, routine#1 \n";
+  write(1, msg, strlen(msg));
 }
 
-void sigIntHandler(int signum) { printf("Recieved SIGINT signal\n"); }
+void *blockSignalsRouting(void *args) {
+  sigset_t
+      set; // A set of signals to be blocked, unblocked, or waited
+
+  if (sigfillset(&set) == -1) {
+    perror("sigfillset() error in 1st routine");
+    return NULL;
+  }
+  if (pthread_sigmask(SIG_SETMASK, &set, NULL) != 0) {
+    perror("pthread_sigmask() error in 1st routine");
+    return NULL;
+  }
+
+  int counter1 = 0;
+  // for (size_t i = 0; i < AMOUNT_TIMES; i++) {
+  while (1) {
+    sleep(1);
+    counter1++;
+    printf("counter#1: %d\n", counter1);
+  }
+  return NULL;
+}
+
+void sigIntHandler(int signum) {
+  const char *msg = "Received SIGINT signal, routine#2 \n";
+  write(1, msg, strlen(msg));
+}
 
 void *handleSigIntRouting(void *args) {
   if (signal(SIGINT, sigIntHandler) == SIG_ERR) {
@@ -34,20 +55,40 @@ void *handleSigIntRouting(void *args) {
   }
 
   int counter2 = 0;
+  // for (size_t i = 0; i < AMOUNT_TIMES; i++) {
   while (1) {
+    sleep(1);
     counter2++;
+    printf("counter#2: %d\n", counter2);
   }
+  return NULL;
 }
 
 void *sigQuitRouting(void *args) {
   int storeRecvSignals;
 
   sigset_t set;
-  sigwait(&set, &storeRecvSignals);
 
-  printf("reveived SIGQUIT signal\n");
+  if (sigaddset(&set, SIGQUIT) == -1) {
+    perror("sigaddset() error in #3");
+    return NULL;
+  }
 
-  pthread_exit(NULL);
+  if (sigwait(&set, &storeRecvSignals) != 0) {
+    perror("sigwait() error()\n");
+    return NULL;
+  }
+
+  printf("received SIGQUIT signal, #3\n");
+
+  int counter3 = 0;
+  while (1) {
+    sleep(1);
+    counter3++;
+    printf("counter#3: %d\n", counter3);
+  }
+
+  // pthread_exit(NULL);
 }
 
 int main(int argc, char **argv) {
@@ -71,19 +112,25 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  if (pthread_join(thread1, NULL) != 0) {
-    perror("pthread_join() error in thread #1");
+  sleep(3);
+  if (pthread_kill(thread1, SIGINT)) {
+    perror("pthread_kill error in 1st");
     return -1;
   }
 
-  if (pthread_join(thread2, NULL) != 0) {
-    perror("pthread_join() error in thread #2");
+  if (pthread_kill(thread2, SIGINT)) {
+    perror("pthread_kill error in 2nd");
     return -1;
   }
 
-  if (pthread_join(thread3, NULL) != 0) {
-    perror("pthread_join() error in thread #3");
+  if (pthread_kill(thread3, SIGQUIT)) {
+    perror("pthread_kill error in 3rd");
     return -1;
+  }
+
+  while (1) {
+    printf("\t\t main: hello to all tids\n");
+    sleep(1);
   }
 
   return 0;
