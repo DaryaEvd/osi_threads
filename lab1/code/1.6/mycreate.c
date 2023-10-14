@@ -102,7 +102,7 @@ int mythread_create(mythread_t *mytid, void *(*startRoutine)(void *),
   int childPid = clone(
       threadStart, childStack,
       CLONE_VM | CLONE_FILES | CLONE_THREAD |
-          CLONE_SIGHAND /* |  SIGCHLD - взято у Рутмана, что ето?*/,
+          CLONE_SIGHAND,
       thread);
   if (childPid == -1) {
     printf("clone() error: %s\n", strerror(errno));
@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
   int resCreate1 =
       mythread_create(&tid1, mythread, "hello from main");
   if (resCreate1 != 0) {
-    printf("error in creating thread1");
+    printf("error in creating thread#1");
     return -1;
   }
   int resJoin1 = mythread_join(tid1, &retVal);
@@ -162,7 +162,7 @@ int main(int argc, char **argv) {
   int resCreate2 =
       mythread_create(&tid2, mythread, "hello from main");
   if (resCreate2 != 0) {
-    printf("error in creating thread2");
+    printf("error in creating thread#2");
     return -1;
   }
   int resJoin2 = mythread_join(tid2, &retVal);
