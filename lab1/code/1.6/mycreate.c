@@ -175,7 +175,6 @@ int main(int argc, char **argv) {
          "'%s' \n ",
          getpid(), getppid(), gettid(), (char *)retVal);
 
-  free(retVal);
 
   return 0;
 }
