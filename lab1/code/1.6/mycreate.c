@@ -40,6 +40,8 @@ void *createStack(off_t size, int mytid) {
       mmap(NULL, size, PROT_NONE, MAP_SHARED, stackFileDescriptor, 0);
   close(stackFileDescriptor);
 
+  printf("createStack() : created for thread#%d\n", mytid);
+
   return stack;
 }
 
@@ -111,7 +113,7 @@ int mythread_create(mythread_t *mytid, void *(*startRoutine)(void *),
   return 0;
 }
 
-void mythread_join(mythread_t mytid, void **retVal) {
+int mythread_join(mythread_t mytid, void **retVal) {
   mythread_struct_t *thread = mytid;
   printf("thread_join: waiting for thread num '%d' to finish\n",
          thread->mythreadID);
@@ -124,11 +126,13 @@ void mythread_join(mythread_t mytid, void **retVal) {
 
   *retVal = thread->retVal;
   thread->joined = 1;
+
+  return 0;
 }
 
 void *mythread(void *arg) {
   char *str = (char *)arg;
-  for (int i = 0; i < 10; i++) {
+  for (int i = 0; i < 5; i++) {
     printf("hello from my thread '%s'\n", str);
     sleep(1);
   }
@@ -136,18 +140,42 @@ void *mythread(void *arg) {
 }
 
 int main(int argc, char **argv) {
-  mythread_t mytid;
+  mythread_t tid1;
   void *retVal;
 
   printf("main: pid '%d', ppid '%d', ttid '%d'\n ", getpid(),
          getppid(), gettid());
 
-  mythread_create(&mytid, mythread, "hello from main");
-  mythread_join(mytid, &retVal);
+  int resCreate1 =
+      mythread_create(&tid1, mythread, "hello from main");
+  if (resCreate1 != 0) {
+    printf("error in creating thread1");
+    return -1;
+  }
+  int resJoin1 = mythread_join(tid1, &retVal);
+  if (resJoin1 != 0) {
+    printf("error in thread joining #1");
+    return -1;
+  }
+
+  mythread_t tid2;
+  int resCreate2 =
+      mythread_create(&tid2, mythread, "hello from main");
+  if (resCreate2 != 0) {
+    printf("error in creating thread2");
+    return -1;
+  }
+  int resJoin2 = mythread_join(tid1, &retVal);
+  if (resJoin2 != 0) {
+    printf("error in thread joining #2");
+    return -1;
+  }
 
   printf("main: pid '%d', ppid '%d', ttid '%d' ; thread returned: "
          "'%s' \n ",
          getpid(), getppid(), gettid(), (char *)retVal);
+
+  free(retVal);
 
   return 0;
 }
