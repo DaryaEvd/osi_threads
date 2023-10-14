@@ -165,7 +165,7 @@ int main(int argc, char **argv) {
     printf("error in creating thread2");
     return -1;
   }
-  int resJoin2 = mythread_join(tid1, &retVal);
+  int resJoin2 = mythread_join(tid2, &retVal);
   if (resJoin2 != 0) {
     printf("error in thread joining #2");
     return -1;
