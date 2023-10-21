@@ -3,6 +3,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <sched.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,7 +34,7 @@ typedef myThreadStruct *mythread_t;
 void *createStack(off_t size, int mytid) {
   char stackFile[STACK_FILE_SIZE];
 
-  // returns ampount of wtriien symbols
+  // returns ampount of wtritten symbols
   if (snprintf(stackFile, sizeof(stackFile), "stack-%d", mytid) < 0) {
     perror("snprintf() error");
     return NULL;
@@ -72,6 +73,10 @@ void *createStack(off_t size, int mytid) {
   return stack;
 }
 
+// wrapper function
+/* to have more additional control for thread function,
+we can do smth before and after calling thread func
+*/
 int threadStart(void *arg) {
   mythread_t tid = (mythread_t)arg;
   myThreadStruct *thread = tid;
@@ -138,7 +143,21 @@ int myThreadCreate(mythread_t *mytid, void *(*startRoutine)(void *),
 
   int childPid = clone(
       threadStart, childStack,
-      CLONE_VM | CLONE_FILES | CLONE_THREAD | CLONE_SIGHAND, thread);
+      CLONE_VM |        // the calling process and the child process
+                        // run in the same memory space
+          CLONE_FILES | // the calling process and the child process
+                        // share the same file descriptor table.
+
+          CLONE_THREAD |  // the child is placed in the same thread
+                          // group  as the  calling process.
+          CLONE_SIGHAND | // the calling process and the child process
+                          // share  the same table of signal handlers.
+          SIGCHLD,        /*    After all of the threads in a
+                      thread group terminate the  parent  process
+             of the thread group is sent a SIGCHLD(or other
+             termination) signal */
+      thread);
+
   if (childPid == -1) {
     printf("clone() error: %s\n", strerror(errno));
     exit(-1);
