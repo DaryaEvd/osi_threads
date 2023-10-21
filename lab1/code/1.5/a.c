@@ -22,6 +22,12 @@ void allProcsHandler(int signum) {
 void *blockSignalsRouting(void *args) {
   sigset_t
       set; // A set of signals to be blocked, unblocked, or waited
+  
+   if (signal(SIGINT, allProcsHandler) == SIG_ERR) {
+    perror("signal() error");
+    // pthread_exit(1);
+    return NULL;
+  }
 
   if (sigfillset(&set) == -1) {
     perror("sigfillset() error in 1st routine");

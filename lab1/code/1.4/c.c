@@ -29,7 +29,14 @@ void *routine(void *args) {
     pthread_testcancel();
   }
 
+  /*
+    if we comment pthread_cleanup_pop(1), then the code won't
+    compiled, casue pthread_cleanup_push and pthread_cleanup_pop are
+    macros and must always be used in matching pairs at the same
+    nesting level of braces.
+  */
   pthread_cleanup_pop(1);
+
   return NULL;
 }
 

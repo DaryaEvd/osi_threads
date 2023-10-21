@@ -8,22 +8,22 @@
 
 void *routine(void *args) {
   /* example for asynchronous type*/
-  // if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL) !=
-  // 0) {
-  //   perror("pthread_setcanceltype() error");
-  //   return NULL;
-  // }
+  if (pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL) !=
+  0) {
+    perror("pthread_setcanceltype() error");
+    return NULL;
+  }
 
   /* example for deffered type*/
   // это можно не писать тк по дефолту type отложенный,
   // a state - endabled
-  // pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
   // pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+  // pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, NULL);
 
   int counter = 0;
   while (1) {
     counter++;
-    pthread_testcancel();
+    // pthread_testcancel();
   }
   return NULL;
 }
