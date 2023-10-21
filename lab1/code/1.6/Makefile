@@ -1,5 +1,6 @@
 TARGET1 = create.o
 SRCS1 = mycreate.c
+
 CC=gcc
 RM=rm
 CFLAGS= -g -Wall

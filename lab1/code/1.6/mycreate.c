@@ -15,6 +15,7 @@
 #define STACK_SIZE 3 * PAGE
 #define STACK_FILE_SIZE 128
 
+// a ptr to a function that recieves void * and returns void*
 typedef void *(*start_routine_t)(void *);
 
 typedef struct mythread {
@@ -24,21 +25,47 @@ typedef struct mythread {
   void *retVal;
   volatile int finished;
   volatile int joined;
-} mythread_struct_t;
+} myThreadStruct;
 
-typedef mythread_struct_t *mythread_t;
+/* a ptr to struct myThreadStruct */
+typedef myThreadStruct *mythread_t;
 
 void *createStack(off_t size, int mytid) {
   char stackFile[STACK_FILE_SIZE];
-  snprintf(stackFile, sizeof(stackFile), "stack-%d", mytid);
+
+  // returns ampount of wtriien symbols
+  if (snprintf(stackFile, sizeof(stackFile), "stack-%d", mytid) < 0) {
+    perror("snprintf() error");
+    return NULL;
+  }
 
   int stackFileDescriptor = open(stackFile, O_RDWR | O_CREAT, 0660);
-  ftruncate(stackFileDescriptor, 0);
-  ftruncate(stackFileDescriptor, size);
+  if (stackFileDescriptor < 0) {
+    perror("open() error");
+    return NULL;
+  }
+
+  // обрезаем файл
+  if (ftruncate(stackFileDescriptor, 0) == -1) {
+    perror("ftruncate() error");
+    return NULL;
+  }
+  if (ftruncate(stackFileDescriptor, size) == -1) {
+    perror("ftruncate() error");
+    return NULL;
+  }
 
   void *stack =
       mmap(NULL, size, PROT_NONE, MAP_SHARED, stackFileDescriptor, 0);
-  close(stackFileDescriptor);
+  if (stack == NULL) {
+    perror("mmap() error");
+    return NULL;
+  }
+
+  if (close(stackFileDescriptor) == -1) {
+    perror("close() error");
+    return NULL;
+  }
 
   printf("createStack() : created for thread#%d\n", mytid);
 
@@ -47,7 +74,7 @@ void *createStack(off_t size, int mytid) {
 
 int threadStart(void *arg) {
   mythread_t tid = (mythread_t)arg;
-  mythread_struct_t *thread = tid;
+  myThreadStruct *thread = tid;
   printf(
       "thread start: starting a thread functon for thread num %d\n",
       thread->mythreadID);
@@ -69,23 +96,33 @@ int threadStart(void *arg) {
   return 0;
 }
 
-int mythread_create(mythread_t *mytid, void *(*startRoutine)(void *),
-                    void *arg) {
+int myThreadCreate(mythread_t *mytid, void *(*startRoutine)(void *),
+                   void *arg) {
   static int mythreadID = 0;
 
   mythreadID++;
 
-  printf("mythread_create(): creating thread num: %d\n", mythreadID);
+  printf("myThreadCreate(): creating thread num: %d\n", mythreadID);
 
   void *childStack = createStack(STACK_SIZE, mythreadID);
-  mprotect(childStack + PAGE, STACK_SIZE - PAGE,
-           PROT_READ | PROT_WRITE);
+  if (childStack == NULL) {
+    return -1;
+  }
 
-  memset(childStack + PAGE, 0x7f, STACK_SIZE - PAGE);
+  if (mprotect(childStack + PAGE, STACK_SIZE - PAGE,
+               PROT_READ | PROT_WRITE) == -1) {
+    printf("mprotect() error");
+    return -1;
+  }
 
-  mythread_struct_t *thread =
-      (mythread_struct_t *)(childStack + STACK_SIZE -
-                            sizeof(mythread_struct_t));
+  if (memset(childStack + PAGE, 0x7f, STACK_SIZE - PAGE) == NULL) {
+    printf("memset() error");
+    return -1;
+  }
+
+  myThreadStruct *thread =
+      (myThreadStruct *)(childStack + STACK_SIZE -
+                         sizeof(myThreadStruct));
 
   thread->mythreadID = mythreadID;
   thread->arg = arg;
@@ -101,9 +138,7 @@ int mythread_create(mythread_t *mytid, void *(*startRoutine)(void *),
 
   int childPid = clone(
       threadStart, childStack,
-      CLONE_VM | CLONE_FILES | CLONE_THREAD |
-          CLONE_SIGHAND,
-      thread);
+      CLONE_VM | CLONE_FILES | CLONE_THREAD | CLONE_SIGHAND, thread);
   if (childPid == -1) {
     printf("clone() error: %s\n", strerror(errno));
     exit(-1);
@@ -114,7 +149,7 @@ int mythread_create(mythread_t *mytid, void *(*startRoutine)(void *),
 }
 
 int mythread_join(mythread_t mytid, void **retVal) {
-  mythread_struct_t *thread = mytid;
+  myThreadStruct *thread = mytid;
   printf("thread_join: waiting for thread num '%d' to finish\n",
          thread->mythreadID);
   while (!thread->finished) {
@@ -146,10 +181,9 @@ int main(int argc, char **argv) {
   printf("main: pid '%d', ppid '%d', ttid '%d'\n ", getpid(),
          getppid(), gettid());
 
-  int resCreate1 =
-      mythread_create(&tid1, mythread, "hello from main");
+  int resCreate1 = myThreadCreate(&tid1, mythread, "hello from main");
   if (resCreate1 != 0) {
-    printf("error in creating thread#1");
+    printf("error in creating thread1");
     return -1;
   }
   int resJoin1 = mythread_join(tid1, &retVal);
@@ -159,10 +193,9 @@ int main(int argc, char **argv) {
   }
 
   mythread_t tid2;
-  int resCreate2 =
-      mythread_create(&tid2, mythread, "hello from main");
+  int resCreate2 = myThreadCreate(&tid2, mythread, "hello from main");
   if (resCreate2 != 0) {
-    printf("error in creating thread#2");
+    printf("error in creating thread2");
     return -1;
   }
   int resJoin2 = mythread_join(tid2, &retVal);
@@ -174,7 +207,6 @@ int main(int argc, char **argv) {
   printf("main: pid '%d', ppid '%d', ttid '%d' ; thread returned: "
          "'%s' \n ",
          getpid(), getppid(), gettid(), (char *)retVal);
-
 
   return 0;
 }
