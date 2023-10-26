@@ -20,15 +20,26 @@ typedef struct _Queue {
 
   pthread_t qmonitor_tid;
 
-  int count; // amount of nodes in a current moment
-  int max_count; 
+  int count; // amount of elements in a current moment
+  int max_count;
 
   // queue statistics
-  long add_attempts; // типа сколько попыток было сделано, чтоб получить ноду 
-  long get_attempts;
-  long add_count; // сколько из этих попыток было успешных
-  long get_count;
+  long add_attempts; // типа сколько попыток было сделано, чтоб
+                     // запистать элемент
+  long get_attempts; // количество попыток прочитать элемент (не факт,
+                     // что смогли прочитать из очереди, тк она может
+                     // быть пустой вообще, например)
+  long add_count; // сколько из этих попыток было успешных, то есть
+                  // вообще сколько добавли элементов
+  long get_count; // сколько прочитали элементов
+
 } queue_t;
+/*
+ То есть в идеале хотелось бы, чтобы когда мы пытаемся что-то
+ добавить, мы могли иметь возможность добавить. А когда хотим что-то
+ прочитать, мы имели возможность что-то прочитать
+ Для этого мы и сравниваем queue statistics parameters))
+ */
 
 queue_t *queue_init(int max_count);
 void queue_destroy(queue_t *q);

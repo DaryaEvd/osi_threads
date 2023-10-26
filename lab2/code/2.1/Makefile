@@ -1,7 +1,7 @@
-TARGET_1 = queue-example
+TARGET_1 = queue-example.o
 SRCS_1 = queue.c queue-example.c
 
-TARGET_2 = queue-threads
+TARGET_2 = queue-threads.o
 SRCS_2 = queue.c queue-threads.c
 
 CC=gcc

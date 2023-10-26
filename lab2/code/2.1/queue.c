@@ -49,7 +49,7 @@ queue_t *queue_init(int max_count) {
 }
 
 void queue_destroy(queue_t *q) {
-  // TODO: It's needed to implement this function
+  // TODO: It's needed to implement this function - DONE
   qnode_t *curr_node = q->first;
   while (curr_node != NULL) {
     qnode_t *tmp = curr_node;
@@ -116,10 +116,10 @@ void queue_print_stats(queue_t *q) {
   printf("\n");
   printf("queue stats: current size %d;\n", q->count);
   printf("attempts: (add_attempts: %ld; get_attempts: %ld; "
-         "add_attempts - get_attempts: %ld\n",
+         "add_attempts - get_attempts: %ld)\n",
          q->add_attempts, q->get_attempts,
          q->add_attempts - q->get_attempts);
-  printf("counts (add_count: %ld; get_count: %ld; add_count - "
+  printf("counts: (add_count: %ld; get_count: %ld; add_count - "
          "get_count: %ld)\n",
          q->add_count, q->get_count, q->add_count - q->get_count);
 }
