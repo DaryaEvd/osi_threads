@@ -34,6 +34,7 @@ void set_cpu(int n) {
 
 // читает чиселки из очереди
 void *reader(void *arg) {
+  // ожидается последовательная запись чисел, начиная с нуля
   int expected = 0;
   queue_t *q = (queue_t *)arg;
   printf("reader [%d %d %d]\n", getpid(), getppid(), gettid());
@@ -47,11 +48,12 @@ void *reader(void *arg) {
       continue;
     }
 
-    // проверка на то, что ридер считываем последовательность
+    // проверка на то, что ридер считывает последовательность
     // неотрицательных чисел
     if (expected != val) {
-      printf(RED "ERROR: get value is %d but expected - %d" NOCOLOR
-                 "\n",
+      printf(RED
+             "ERROR: get value is '%d' but expected - '%d'" NOCOLOR
+             "\n",
              val, expected);
     }
     expected = val + 1;
@@ -60,13 +62,13 @@ void *reader(void *arg) {
   return NULL;
 }
 
-// последовательно пишет чиселки
+// последовательно пишет чиселки, начиная с нуля
 void *writer(void *arg) {
   int i = 0;
   queue_t *q = (queue_t *)arg;
   printf("writer [%d %d %d]\n", getpid(), getppid(), gettid());
 
-  set_cpu(1);
+  set_cpu(2);
 
   while (1) {
     int ok = queue_add(q, i);
@@ -114,7 +116,7 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  joinError = pthread_join(tidWriter, retVal);
+  joinError = pthread_join(tidWriter, &retVal);
   if (joinError) {
     printf("main: pthread_join() failed: %s\n", strerror(joinError));
     return -1;

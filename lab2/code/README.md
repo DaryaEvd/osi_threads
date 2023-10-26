@@ -74,3 +74,21 @@ Program terminated with signal SIGSEGV, Segmentation fault.
 
 То есть у нас есть `tmp=0`. Вопрос: почему?  
 Потому что поток что-то успелось сделаться, а что-то нет. Эти неатомарные вещи в конкурентной среде происходят несинхронизированно. 
+
+
+### Теория про планирование и shed_yield() в частности
+- [Про планирование в Lunux](https://habr.com/ru/companies/ruvds/articles/578788/)  
+- Статья про shed_yield() [number1](https://it.wikireading.ru/1764)  
+- [number2](https://it.wikireading.ru/1764)  
+
+
+From the 2nd article украдено:  
+```
+Состояние «выполняется»
+
+Как только планировщик поставил процесс на выполнение, началось состояние «выполняется». Процесс может выполняться весь предложенный промежуток (квант) времени, а может уступить место другим процессам, воспользовавшись системным вывозом sched_yield.
+```
+
+
+### Доп инфа  
+- [Про cas операции](https://en.wikipedia.org/wiki/Compare-and-swap#:~:text=In%20computer%20science%2C%20compare%2Dand,to%20a%20new%20given%20value.)  

@@ -35,7 +35,7 @@ queue_t *queue_init(int max_count) {
   q->add_count = q->get_count = 0;
 
   /*
-  we create a thread, save it's thread id in queue
+  we create a thread, save it's thread_id in queue
   and start qmonitor with arg q (which is our queue)
   */
   err = pthread_create(&q->qmonitor_tid, NULL, qmonitor, q);
@@ -60,7 +60,7 @@ void queue_destroy(queue_t *q) {
 }
 
 int queue_add(queue_t *q, int val) {
-  q->add_attempts++; // +1 попытка
+  q->add_attempts++; // +1 попытка записать элемент
 
   assert(q->count <= q->max_count);
 
@@ -83,14 +83,14 @@ int queue_add(queue_t *q, int val) {
     q->last = q->last->next;
   }
 
-  q->count++; // количество нод на текущий момент
-  q->add_count++; // типа удачная попытка добавить ноду
+  q->count++; // количество элементов на текущий момент
+  q->add_count++; // сколько добавили элементов
 
   return 1;
 }
 
 int queue_get(queue_t *q, int *val) {
-  q->get_attempts++; // +1 попытка
+  q->get_attempts++; // +1 попытка достать элемент
 
   assert(q->count >= 0);
 
@@ -104,7 +104,7 @@ int queue_get(queue_t *q, int *val) {
 
   free(tmp);      // delete the 1st node
   q->count--;     // amount of elems in queue
-  q->get_count++; // +1 successful попытка
+  q->get_count++; // +1 successful попытка добавления элементов
 
   return 1;
 }
