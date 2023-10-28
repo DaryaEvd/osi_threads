@@ -34,18 +34,21 @@ int main(int argc, char **argv) {
   pthread_t tid;
   pthread_attr_t attrs;
   if (pthread_attr_init(&attrs) != 0) {
+    free(phonebook);
     perror("error in pthread_attr_init");
     return -1;
   }
 
   if (pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED) !=
       0) {
+    free(phonebook);
     perror("pthread_attr_setdetachstate error()");
     return -1;
   }
   pthread_attr_destroy(&attrs);
-  
+
   if (pthread_create(&tid, NULL, routine, phonebook) != 0) {
+    free(phonebook);
     perror("pthread create() error");
     return -1;
   }
