@@ -80,6 +80,7 @@ Program terminated with signal SIGSEGV, Segmentation fault.
 - [Про планирование в Lunux](https://habr.com/ru/companies/ruvds/articles/578788/)  
 - Статья про shed_yield() [number1](https://it.wikireading.ru/1764)  
 - [number2](https://it.wikireading.ru/1764)  
+- [number3](https://www.halolinux.us/kernel-reference/the-sched-yield-system-call.html)  
 
 
 From the 2nd article украдено:  

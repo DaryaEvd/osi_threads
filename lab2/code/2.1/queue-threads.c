@@ -1,6 +1,5 @@
 #define _GNU_SOURCE
-#include <errno.h>
-#include <pthread.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,12 +16,14 @@
 
 void set_cpu(int n) {
   int err;
-  cpu_set_t cpuset;
+  cpu_set_t cpuset; // data structure to describe CPU mask
   pthread_t tid = pthread_self();
 
-  CPU_ZERO(&cpuset);
-  CPU_SET(n, &cpuset);
+  CPU_ZERO(&cpuset);   // clears set, so that it contains no CPUs.
+  CPU_SET(n, &cpuset); // add CPU cpu to set
 
+  //  Limit specified thread TH to run only on the processors
+  //  represented in CPUSET
   err = pthread_setaffinity_np(tid, sizeof(cpu_set_t), &cpuset);
   if (err) {
     printf("set_cpu: pthread_setaffinity failed for cpu %d\n", n);
@@ -98,7 +99,11 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  sched_yield();
+  /*
+  The sched_yield() function allows a thread to give up control of a
+  processor so that another thread can have the opportunity to run
+  */
+  // sched_yield();
 
   pthread_t tidWriter;
   createErr = pthread_create(&tidWriter, NULL, writer, q);
@@ -109,6 +114,7 @@ int main(int argc, char **argv) {
   }
 
   // TODO: join threads - DONE
+
   void *retVal;
   int joinError = pthread_join(tidReader, &retVal);
   if (joinError) {
@@ -118,11 +124,11 @@ int main(int argc, char **argv) {
 
   joinError = pthread_join(tidWriter, &retVal);
   if (joinError) {
-    printf("main: pthread_join() failed: %s\n", strerror(joinError));
+    printf("main: pthred_join() failed: %s\n", strerror(joinError));
     return -1;
   }
 
-  // queue_destroy(q); // ?
+  queue_destroy(q); // ?
 
   pthread_exit(NULL);
 
