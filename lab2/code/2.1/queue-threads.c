@@ -103,7 +103,7 @@ int main(int argc, char **argv) {
   The sched_yield() function allows a thread to give up control of a
   processor so that another thread can have the opportunity to run
   */
-  // sched_yield();
+  sched_yield();
 
   pthread_t tidWriter;
   createErr = pthread_create(&tidWriter, NULL, writer, q);
