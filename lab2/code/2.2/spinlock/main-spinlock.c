@@ -9,7 +9,7 @@
 #include <pthread.h>
 #include <sched.h>
 
-#include "queue.h"
+#include "queue-spinlock-impl.h"
 
 #define RED "\033[41m"
 #define NOCOLOR "\033[0m"
@@ -100,10 +100,6 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  /*
-  The sched_yield() function allows a thread to give up control of a
-  processor so that another thread can have the opportunity to run
-  */
   sched_yield();
 
   pthread_t tidWriter;
@@ -113,8 +109,6 @@ int main(int argc, char **argv) {
            strerror(createErr));
     return -1;
   }
-
-  // TODO: join threads - DONE
 
   void *retVal;
   int joinError = pthread_join(tidReader, &retVal);

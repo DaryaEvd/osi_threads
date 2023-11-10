@@ -2,7 +2,7 @@
 #include <assert.h>
 #include <pthread.h>
 
-#include "queue.h"
+#include "queue-spinlock-impl.h"
 
 void *qmonitor(void *arg) {
   queue_t *q = (queue_t *)arg;
@@ -18,6 +18,14 @@ void *qmonitor(void *arg) {
 }
 
 queue_t *queue_init(int max_count) {
+  /*
+  разрешает использовать спин-блокировку только потокам, созданным в
+  том же процессе, что и поток, который инициализировал
+  спин-блокировку. Если потоки разных процессов пытаются использовать
+  такую ​​спин-блокировку, поведение
+  не определено. Значение по умолчанию атрибута общего доступа к
+  процессу — PTHREAD_PROCESS_PRIVATE.
+  */
   queue_t *q = malloc(sizeof(queue_t)); // malloc mem for structure
   if (!q) {
     printf("Cannot allocate memory for a queue\n");
@@ -31,6 +39,14 @@ queue_t *queue_init(int max_count) {
 
   q->add_attempts = q->get_attempts = 0;
   q->add_count = q->get_count = 0;
+
+  int errSpintInit =
+      pthread_spin_init(&q->lock, PTHREAD_PROCESS_PRIVATE);
+  if (errSpintInit) {
+    printf("queue_init: pthread_spin_init() failed: %s\n",
+           strerror(errSpintInit));
+    abort();
+  }
 
   /*
   we create a thread, save it's thread_id in queue
@@ -49,7 +65,12 @@ queue_t *queue_init(int max_count) {
 void queue_destroy(queue_t *q) {
   const int errCancel = pthread_cancel(q->qmonitor_tid);
   if (errCancel) {
-    printf("pthread_cancel() error");
+    printf("queue_destroy: pthread_cancel() error");
+  }
+
+  int errDestroySpin = pthread_spin_destroy(&q->lock);
+  if (errDestroySpin) {
+    printf("queue_destroy: pthread_spin_destroy() error");
   }
 
   qnode_t *curr_node = q->first;
@@ -62,11 +83,14 @@ void queue_destroy(queue_t *q) {
 }
 
 int queue_add(queue_t *q, int val) {
+  pthread_spin_lock(&q->lock); // !!!
+
   q->add_attempts++; // +1 попытка записать элемент
 
   assert(q->count <= q->max_count);
 
   if (q->count == q->max_count) {
+    pthread_spin_unlock(&q->lock); // !!!
     return 0;
   }
 
@@ -89,15 +113,24 @@ int queue_add(queue_t *q, int val) {
   q->count++; // количество элементов на текущий момент
   q->add_count++; // сколько добавили элементов
 
+  pthread_spin_unlock(&q->lock); // !!!
+
   return 1;
 }
 
 int queue_get(queue_t *q, int *val) {
+  if (pthread_spin_lock(&q->lock)) {
+    printf("pthread_spin_lock() error\n");
+  }
+
   q->get_attempts++; // +1 попытка достать элемент
 
   assert(q->count >= 0);
 
   if (q->count == 0) {
+    if (pthread_spin_unlock(&q->lock)) {
+      printf("pthread_spin_unlock() error\n");
+    }
     return 0;
   }
 
@@ -109,6 +142,10 @@ int queue_get(queue_t *q, int *val) {
   free(tmp);      // delete the 1st node
   q->count--;     // amount of elems in queue
   q->get_count++; // +1 successful попытка добавления элементов
+
+  if (pthread_spin_unlock(&q->lock)) {
+    printf("pthread_spin_unlock() error\n");
+  }
 
   return 1;
 }
