@@ -245,4 +245,6 @@ function2() {
 
 
 ### Сайтики 
-- [про spinlock](https://docs.oracle.com/cd/E26502_01/html/E35303/ggecq.html#scrolltoc)  
+- [про spinlock](https://docs.oracle.com/cd/E26502_01/html/E35303/ggecq.html#scrolltoc) 
+- [про mutex](https://docs.oracle.com/cd/E26502_01/html/E35303/sync-110.html#scrolltoc) 
+

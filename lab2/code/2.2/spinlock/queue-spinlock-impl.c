@@ -18,7 +18,6 @@ void *qmonitor(void *arg) {
 }
 
 queue_t *queue_init(int max_count) {
-
   queue_t *q = malloc(sizeof(queue_t)); // malloc mem for structure
   if (!q) {
     printf("Cannot allocate memory for a queue\n");
