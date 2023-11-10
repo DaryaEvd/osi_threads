@@ -18,14 +18,7 @@ void *qmonitor(void *arg) {
 }
 
 queue_t *queue_init(int max_count) {
-  /*
-  разрешает использовать спин-блокировку только потокам, созданным в
-  том же процессе, что и поток, который инициализировал
-  спин-блокировку. Если потоки разных процессов пытаются использовать
-  такую ​​спин-блокировку, поведение
-  не определено. Значение по умолчанию атрибута общего доступа к
-  процессу — PTHREAD_PROCESS_PRIVATE.
-  */
+
   queue_t *q = malloc(sizeof(queue_t)); // malloc mem for structure
   if (!q) {
     printf("Cannot allocate memory for a queue\n");
@@ -42,6 +35,14 @@ queue_t *queue_init(int max_count) {
 
   int errSpintInit =
       pthread_spin_init(&q->lock, PTHREAD_PROCESS_PRIVATE);
+  /* про PTHREAD_PROCESS_PRIVATE
+  разрешает использовать спин-блокировку только потокам, созданным в
+  том же процессе, что и поток, который инициализировал
+  спин-блокировку. Если потоки разных процессов пытаются использовать
+  такую ​​спин-блокировку, поведение
+  не определено. Значение по умолчанию атрибута общего доступа к
+  процессу — PTHREAD_PROCESS_PRIVATE.
+  */
   if (errSpintInit) {
     printf("queue_init: pthread_spin_init() failed: %s\n",
            strerror(errSpintInit));
@@ -83,14 +84,18 @@ void queue_destroy(queue_t *q) {
 }
 
 int queue_add(queue_t *q, int val) {
-  pthread_spin_lock(&q->lock); // !!!
+  if (pthread_spin_lock(&q->lock)) {
+    printf("pthread_spin_lock() error\n");
+  }
 
   q->add_attempts++; // +1 попытка записать элемент
 
   assert(q->count <= q->max_count);
 
   if (q->count == q->max_count) {
-    pthread_spin_unlock(&q->lock); // !!!
+    if (pthread_spin_unlock(&q->lock)) {
+      printf("pthread_spin_unlock() error\n");
+    }
     return 0;
   }
 
@@ -113,7 +118,9 @@ int queue_add(queue_t *q, int val) {
   q->count++; // количество элементов на текущий момент
   q->add_count++; // сколько добавили элементов
 
-  pthread_spin_unlock(&q->lock); // !!!
+  if (pthread_spin_unlock(&q->lock)) {
+    printf("pthread_spin_unlock() error\n");
+  }
 
   return 1;
 }
@@ -151,16 +158,27 @@ int queue_get(queue_t *q, int *val) {
 }
 
 void queue_print_stats(queue_t *q) {
-  /*
-  here we print amount of попыток и how many of them are удачные
-  */
+  // here we print amount of attempts и how many of them are lucky
+
+  if (pthread_spin_lock(&q->lock)) {
+    printf("pthread_spin_lock() error\n");
+  }
+  int count = q->count;
+  long add_attempts = q->add_attempts;
+  long get_attempts = q->get_attempts;
+  long add_count = q->add_count;
+  long get_count = q->get_count;
+
+  if (pthread_spin_unlock(&q->lock)) {
+    printf("pthread_spin_unlock() error\n");
+  }
+
   printf("\n");
-  printf("queue stats: current size %d;\n", q->count);
+  printf("queue stats: current size %d;\n", count);
   printf("attempts: (add_attempts: %ld; get_attempts: %ld; "
          "add_attempts - get_attempts: %ld)\n",
-         q->add_attempts, q->get_attempts,
-         q->add_attempts - q->get_attempts);
+         add_attempts, get_attempts, add_attempts - get_attempts);
   printf("counts: (add_count: %ld; get_count: %ld; add_count - "
          "get_count: %ld)\n",
-         q->add_count, q->get_count, q->add_count - q->get_count);
+         add_count, get_count, add_count - get_count);
 }
