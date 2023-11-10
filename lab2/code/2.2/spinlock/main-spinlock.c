@@ -72,6 +72,10 @@ void *writer(void *arg) {
   set_cpu(2);
 
   while (1) {
+    // uncomment usleep() for пункт d
+    // usleep(1); // !!!!!!!!!!!!!
+    //
+
     int ok = queue_add(q, i);
     if (!ok) {
       continue;
