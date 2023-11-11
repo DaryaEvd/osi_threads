@@ -34,7 +34,7 @@ typedef struct _Queue {
                   // вообще сколько добавли элементов
   long get_count; // сколько прочитали элементов
 
-  pthread_spinlock_t lock;
+  pthread_spinlock_t lock; // 1 - можно залочить, 0 - низя
 
 } queue_t;
 /*
