@@ -247,9 +247,11 @@ Spinlock-и` удобны тогда, когда операции коротки
 - [про spinlock](https://docs.oracle.com/cd/E26502_01/html/E35303/ggecq.html#scrolltoc) 
 - [про mutex](https://docs.oracle.com/cd/E26502_01/html/E35303/sync-110.html#scrolltoc) 
 - [про mutex-ы & spinlocks](https://stackoverflow.com/questions/5869825/when-should-one-use-a-spinlock-instead-of-mutex)  
-- [mutex vs spinlock](http://www.alexonlinux.com/pthread-mutex-vs-pthread-spinlock)  
+- [mutex vs spinlock num1](http://www.alexonlinux.com/pthread-mutex-vs-pthread-spinlock)  
 
-### Хорошо написано
+
+
+### Хорошо написано 1
 Украдено [отсюда](https://stackoverflow.com/questions/5869825/when-should-one-use-a-spinlock-instead-of-mutex) 
 
 **The Theory**
@@ -277,3 +279,41 @@ A hybrid spinlock behaves like a normal spinlock at first, but to avoid wasting 
 **Summary**
 
 If in doubt, use mutexes, they are usually the better choice and most modern systems will allow them to spinlock for a very short amount of time, if this seems beneficial. Using spinlocks can sometimes improve performance, but only under certain conditions and the fact that you are in doubt rather tells me, that you are not working on any project currently where a spinlock might be beneficial. You might consider using your own "lock object", that can either use a spinlock or a mutex internally (e.g. this behavior could be configurable when creating such an object), initially use mutexes everywhere and if you think that using a spinlock somewhere might really help, give it a try and compare the results (e.g. using a profiler), but be sure to test both cases, a single-core and a multi-core system before you jump to conclusions (and possibly different operating systems, if your code will be cross-platform).
+
+
+### Хорошо написано 2
+Украдено [отсюда](https://www.javatpoint.com/spinlock-vs-mutex-in-operating-system)  
+
+Here, you will learn about the various key differences between Spinlock and Mutex in OS. Some main differences between Spinlock and Mutex in OS are as follows:
+
+- Спин-блокировка - это тип блокировки, которая заставляет поток, пытающийся получить его, проверять его доступность, постоянно ожидая в цикле. С другой стороны, мьютекс - это программный объект, предназначенный для того, чтобы разные процессы могли по очереди использовать один и тот же ресурс.   
+- Спин-блокировка временно предотвращает перемещение потока. Напротив, мьютекс может блокировать поток на длительный период времени.  
+- Spinlock полезен для ограниченного количества критических секций; в противном случае это приводит к пустой трате циклов ЦПУ. С другой стороны, мьютекс полезен для важных расширенных областей, где частое переключение контекста может привести к увеличению накладных расходов.  
+- Spinlock не использует переключение контекста. Напротив, мьютекс предполагает переключение контекста.   
+- Процесс в спин-блокировке может не перейти в режим сна во время ожидания блокировки. Напротив, процесс во мьютексе может спать в ожидании блокировки.  
+- Spinlock отключает вытеснение. С другой стороны, мьютекс поддерживает вытеснение.  
+
+### Реализация mutex-a  
+Украдено [отсюда](https://www.tstu.ru/book/elib3/mm/2016/evdokimov/site/page41.41.html)  
+
+**Мьютекс** — это совместно используемая переменная, которая может находиться в одном из двух состояний: заблокированном или незаблокированном.  
+Следовательно, для их представления нужен только один бит, но на практике зачастую используется целое число, при этом нуль означает незаблокированное, а все остальные значения — заблокированное состояние. Для работы с мьютексами используются две процедуры.
+
+1. Когда потоку (или процессу) необходим доступ к критической области, он вызывает процедуру mutex_lock. Если мьютекс находится в незаблокированном состоянии (означающем доступность входа в критическую область), вызов проходит удачно и вызывающий поток может свободно войти в критическую область.
+
+2. В то же время, если мьютекс уже заблокирован, вызывающий поток блокируется до тех пор, пока поток, находящийся в критической области, не завершит свою работу и не вызовет процедуру mutex_unlock. Если на мьютексе заблокировано несколько потоков, то произвольно выбирается один из них, которому разрешается воспользоваться заблокированностью других потоков.
+
+```
+  TSL REGISTER,MUTEX	  | копирование мьютекса в регистр и установка его в 1
+	CMP REGISTER,#0	      | был ли мьютекс нулевым?
+	JZE ok	              |	если он был нулевым, значит, не был заблокирован,поэтому
+            						| нужно вернуть  управление вызывающей программе 
+	CALL thread_yield	    |	мьютекс занят; пусть планировщик возобновит работу другого потока 
+	JMP mutex lock	      |	повторная попытка
+	ok:	RET	              |	возврат управления вызывающей программе; 
+          						  | будет осуществлен вход в критическую область  
+
+	mutex_unlock:
+	MOVE MUTEX,#0	        |	сохранение в мьютексе значения 0
+	RET	                  |	возврат управления вызывающей программе
+```
