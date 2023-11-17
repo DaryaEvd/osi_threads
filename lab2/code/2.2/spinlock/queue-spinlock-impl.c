@@ -4,6 +4,18 @@
 
 #include "queue-spinlock-impl.h"
 
+void createSpinlock(queue_t *q) {
+  if (pthread_spin_lock(&q->lock)) {
+    printf("pthread_spin_lock() error\n");
+  }
+}
+
+void destroySpinlock(queue_t *q) {
+  if (pthread_spin_unlock(&q->lock)) {
+    printf("pthread_spin_unlock() error\n");
+  }
+}
+
 void *qmonitor(void *arg) {
   queue_t *q = (queue_t *)arg;
 
@@ -21,6 +33,7 @@ queue_t *queue_init(int max_count) {
   queue_t *q = malloc(sizeof(queue_t)); // malloc mem for structure
   if (!q) {
     printf("Cannot allocate memory for a queue\n");
+    free(q);
     abort();
   }
 
@@ -45,6 +58,7 @@ queue_t *queue_init(int max_count) {
   if (errSpintInit) {
     printf("queue_init: pthread_spin_init() failed: %s\n",
            strerror(errSpintInit));
+    free(q);
     abort();
   }
 
@@ -56,6 +70,7 @@ queue_t *queue_init(int max_count) {
   if (err) {
     printf("queue_init: pthread_create() failed: %s\n",
            strerror(err));
+    free(q);
     abort();
   }
 
@@ -83,24 +98,21 @@ void queue_destroy(queue_t *q) {
 }
 
 int queue_add(queue_t *q, int val) {
-  if (pthread_spin_lock(&q->lock)) {
-    printf("pthread_spin_lock() error\n");
-  }
+  createSpinlock(q);
 
   q->add_attempts++; // +1 попытка записать элемент
 
   assert(q->count <= q->max_count);
 
   if (q->count == q->max_count) {
-    if (pthread_spin_unlock(&q->lock)) {
-      printf("pthread_spin_unlock() error\n");
-    }
+    destroySpinlock(q);
     return 0;
   }
 
   qnode_t *new = malloc(sizeof(qnode_t)); // malloc mem for one node
   if (!new) {
     printf("Cannot allocate memory for new node\n");
+    free(new);
     abort();
   }
 
@@ -117,26 +129,18 @@ int queue_add(queue_t *q, int val) {
   q->count++; // количество элементов на текущий момент
   q->add_count++; // сколько добавили элементов
 
-  if (pthread_spin_unlock(&q->lock)) {
-    printf("pthread_spin_unlock() error\n");
-  }
+  destroySpinlock(q);
 
   return 1;
 }
 
 int queue_get(queue_t *q, int *val) {
-  if (pthread_spin_lock(&q->lock)) {
-    printf("pthread_spin_lock() error\n");
-  }
-
-  q->get_attempts++; // +1 попытка достать элемент
+  createSpinlock(q);
 
   assert(q->count >= 0);
 
   if (q->count == 0) {
-    if (pthread_spin_unlock(&q->lock)) {
-      printf("pthread_spin_unlock() error\n");
-    }
+    destroySpinlock(q);
     return 0;
   }
 
@@ -145,32 +149,26 @@ int queue_get(queue_t *q, int *val) {
   *val = tmp->val;           // take val of the 1st node
   q->first = q->first->next; // now next node is the 1st
 
-  free(tmp);      // delete the 1st node
+  free(tmp);      // destroy the 1st node
   q->count--;     // amount of elems in queue
   q->get_count++; // +1 successful попытка добавления элементов
 
-  if (pthread_spin_unlock(&q->lock)) {
-    printf("pthread_spin_unlock() error\n");
-  }
+  destroySpinlock(q);
 
   return 1;
 }
 
 void queue_print_stats(queue_t *q) {
   // here we print amount of attempts и how many of them are lucky
+  createSpinlock(q);
 
-  if (pthread_spin_lock(&q->lock)) {
-    printf("pthread_spin_lock() error\n");
-  }
   int count = q->count;
   long add_attempts = q->add_attempts;
   long get_attempts = q->get_attempts;
   long add_count = q->add_count;
   long get_count = q->get_count;
 
-  if (pthread_spin_unlock(&q->lock)) {
-    printf("pthread_spin_unlock() error\n");
-  }
+  destroySpinlock(q);
 
   printf("\n");
   printf("queue stats: current size %d;\n", count);
