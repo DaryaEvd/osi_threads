@@ -6,6 +6,11 @@
 
 #include "queue-condvar-impl.h"
 
+#define ALLOW_SHARE 0
+#define PREVENT_SHARE 1
+
+int flagCanShareData = 0;
+
 void execMutexlock(queue_t *q) {
   if (pthread_mutex_lock(&q->mutex)) {
     printf("pthread_mutex_lock() error: %s \n", strerror(errno));
@@ -123,11 +128,16 @@ void queue_destroy(queue_t *q) {
 int queue_add(queue_t *q, int val) {
   execMutexlock(q);
 
+  while (q->count == q->max_count ||
+         flagCanShareData == PREVENT_SHARE) {
+    pthread_cond_wait(&q->cond_var, &q->mutex);
+  }
+
   q->add_attempts++; // +1 попытка записать элемент
 
   assert(q->count <= q->max_count);
 
-  if (q->count == q->max_count) {
+  if (q->count == q->max_count || flagCanShareData == PREVENT_SHARE) {
     execSignal(q);
     execMutexUnlock(q);
     return 0;
@@ -152,6 +162,8 @@ int queue_add(queue_t *q, int val) {
   q->count++; // количество элементов на текущий момент
   q->add_count++; // сколько добавили элементов
 
+  flagCanShareData = PREVENT_SHARE;
+
   execSignal(q);
   execMutexUnlock(q);
   return 1;
@@ -163,7 +175,8 @@ int queue_get(queue_t *q, int *val) {
   q->get_attempts++; // +1 попытка достать элемент
   assert(q->count >= 0);
 
-  while(!(q->count > 0)) {
+  // типа пока пусто
+  while (!(q->count > 0) || flagCanShareData == ALLOW_SHARE) {
     pthread_cond_wait(&q->cond_var, &q->mutex);
   }
 
@@ -181,6 +194,9 @@ int queue_get(queue_t *q, int *val) {
   q->count--;     // amount of elems in queue
   q->get_count++; // +1 successful попытка добавления элементов
 
+  flagCanShareData = ALLOW_SHARE;
+
+  execSignal(q);
   execMutexUnlock(q);
 
   return 1;
