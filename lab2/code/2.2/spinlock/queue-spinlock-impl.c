@@ -87,7 +87,8 @@ void queue_destroy(queue_t *q) {
 
   int errDestroySpin = pthread_spin_destroy(&q->lock);
   if (errDestroySpin) {
-    printf("queue_destroy: pthread_spin_destroy() error");
+    printf("queue_destroy: pthread_spin_destroy() error : %s\n",
+           strerror(errno));
   }
 
   qnode_t *curr_node = q->first;

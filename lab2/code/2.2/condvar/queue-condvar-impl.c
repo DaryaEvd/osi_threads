@@ -4,7 +4,7 @@
 #include <pthread.h>
 #include <unistd.h>
 
-#include "queue-mutex-impl.h"
+#include "queue-condvar-impl.h"
 
 void execMutexlock(queue_t *q) {
   if (pthread_mutex_lock(&q->mutex)) {
@@ -17,6 +17,13 @@ void execMutexUnlock(queue_t *q) {
   if (pthread_mutex_unlock(&q->mutex)) {
     printf("pthread_mutex_unlock() error: %s \n", strerror(errno));
     abort();
+  }
+}
+
+void execSignal(queue_t *q) {
+  if (pthread_cond_signal(&q->cond_var)) {
+    printf("pthread_cond_signal() error: %s \n", strerror(errno));
+    // abort();
   }
 }
 
@@ -65,6 +72,13 @@ queue_t *queue_init(int max_count) {
     abort();
   }
 
+  int errCondVarInit = pthread_cond_init(&q->cond_var, NULL);
+  if (errCondVarInit) {
+    printf("queue_init: pthread_cond_init() failed: %s\n",
+           strerror(errCondVarInit));
+    abort();
+  }
+
   /*
     we create a thread, save it's thread_id in queue
     and start qmonitor with arg q (which is our queue)
@@ -87,7 +101,12 @@ void queue_destroy(queue_t *q) {
   }
 
   if (pthread_mutex_destroy(&q->mutex)) {
-    printf("queue_destroy: pthread_mutex_destroy() error : %s\n",
+    printf("queue_destroy: pthread_mutex_destroy() error: %s\n",
+           strerror(errno));
+  }
+
+  if (pthread_cond_destroy(&q->cond_var)) {
+    printf("queue_destroy: pthread_cond_destroy() error: %s\n",
            strerror(errno));
   }
 
@@ -109,6 +128,7 @@ int queue_add(queue_t *q, int val) {
   assert(q->count <= q->max_count);
 
   if (q->count == q->max_count) {
+    execSignal(q);
     execMutexUnlock(q);
     return 0;
   }
@@ -132,6 +152,7 @@ int queue_add(queue_t *q, int val) {
   q->count++; // количество элементов на текущий момент
   q->add_count++; // сколько добавили элементов
 
+  execSignal(q);
   execMutexUnlock(q);
   return 1;
 }
@@ -141,6 +162,11 @@ int queue_get(queue_t *q, int *val) {
 
   q->get_attempts++; // +1 попытка достать элемент
   assert(q->count >= 0);
+
+  while(!(q->count > 0)) {
+    pthread_cond_wait(&q->cond_var, &q->mutex);
+  }
+
   if (q->count == 0) {
     execMutexUnlock(q);
     return 0;
