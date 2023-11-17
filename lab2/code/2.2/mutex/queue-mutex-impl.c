@@ -6,6 +6,20 @@
 
 #include "queue-mutex-impl.h"
 
+void createMutexLock(queue_t *q) {
+  if (pthread_mutex_lock(&q->mutex)) {
+    printf("pthread_mutex_lock() error: %s \n", strerror(errno));
+    abort();
+  }
+}
+
+void destroyMutexUnlock(queue_t *q) {
+  if (pthread_mutex_unlock(&q->mutex)) {
+    printf("pthread_mutex_unlock() error: %s \n", strerror(errno));
+    abort();
+  }
+}
+
 qnode_t *create_node(int val) {
   qnode_t *new = malloc(sizeof(qnode_t));
   if (!new) {
@@ -87,17 +101,14 @@ void queue_destroy(queue_t *q) {
 }
 
 int queue_add(queue_t *q, int val) {
-  if (pthread_mutex_lock(&q->mutex)) {
-    printf("pthread_mutex_lock() error\n");
-  }
+  createMutexLock(q);
+
   q->add_attempts++; // +1 попытка записать элемент
 
   assert(q->count <= q->max_count);
 
   if (q->count == q->max_count) {
-    if (pthread_mutex_unlock(&q->mutex)) {
-      printf("pthread_mutex_unlock() error\n");
-    }
+    destroyMutexUnlock(q);
     return 0;
   }
 
@@ -120,22 +131,17 @@ int queue_add(queue_t *q, int val) {
   q->count++; // количество элементов на текущий момент
   q->add_count++; // сколько добавили элементов
 
-  if (pthread_mutex_unlock(&q->mutex)) {
-    printf("pthread_mutex_unlock() error\n");
-  }
+  destroyMutexUnlock(q);
   return 1;
 }
 
 int queue_get(queue_t *q, int *val) {
-  if (pthread_mutex_lock(&q->mutex)) {
-    printf("pthread_mutex_lock() error\n");
-  }
+  createMutexLock(q);
+
   q->get_attempts++; // +1 попытка достать элемент
   assert(q->count >= 0);
   if (q->count == 0) {
-    if (pthread_mutex_unlock(&q->mutex)) {
-      printf("pthread_mutex_unlock() error\n");
-    }
+    destroyMutexUnlock(q);
     return 0;
   }
 
@@ -148,27 +154,22 @@ int queue_get(queue_t *q, int *val) {
   q->count--;     // amount of elems in queue
   q->get_count++; // +1 successful попытка добавления элементов
 
-  if (pthread_mutex_unlock(&q->mutex)) {
-    printf("pthread_mutex_unlock() error\n");
-  }
+  destroyMutexUnlock(q);
 
   return 1;
 }
 
 void queue_print_stats(queue_t *q) {
   // here we print amount of attempts и how many of them are lucky
-  if (pthread_mutex_lock(&q->mutex)) {
-    printf("pthread_mutex_lock() error\n");
-  }
+  createMutexLock(q);
+
   const int count = q->count;
   const long add_attempts = q->add_attempts;
   const long get_attempts = q->get_attempts;
   const long add_count = q->add_count;
   const long get_count = q->get_count;
 
-  if (pthread_mutex_unlock(&q->mutex)) {
-    printf("pthread_mutex_unlock() error\n");
-  }
+  destroyMutexUnlock(q);
 
   printf("queue stats: current size %d; attempts: (%ld %ld %ld); "
          "counts (%ld %ld %ld)\n",

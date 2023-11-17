@@ -6,13 +6,15 @@
 
 void createSpinlock(queue_t *q) {
   if (pthread_spin_lock(&q->lock)) {
-    printf("pthread_spin_lock() error\n");
+    printf("pthread_spin_lock() error: %s\n", strerror(errno));
+    abort();
   }
 }
 
 void destroySpinlock(queue_t *q) {
   if (pthread_spin_unlock(&q->lock)) {
-    printf("pthread_spin_unlock() error\n");
+    printf("pthread_spin_unlock() error: %s\n", strerror(errno));
+    abort();
   }
 }
 
