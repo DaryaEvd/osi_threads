@@ -39,7 +39,7 @@ void *qmonitor(void *arg) {
 
   while (1) {
     queue_print_stats(q);
-    usleep(1000);
+    sleep(1);
   }
 }
 

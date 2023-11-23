@@ -7,9 +7,7 @@
 #include "queue-condvar-impl.h"
 
 #define ALLOW_SHARE 0
-#define PREVENT_SHARE 1
-
-int flagCanShareData = 0;
+#define PROHIBIT_SHARE 1
 
 void execMutexlock(queue_t *q) {
   if (pthread_mutex_lock(&q->mutex)) {
@@ -28,7 +26,7 @@ void execMutexUnlock(queue_t *q) {
 void execSignal(queue_t *q) {
   if (pthread_cond_signal(&q->cond_var)) {
     printf("pthread_cond_signal() error: %s \n", strerror(errno));
-    // abort();
+    abort();
   }
 }
 
@@ -51,7 +49,7 @@ void *qmonitor(void *arg) {
 
   while (1) {
     queue_print_stats(q);
-    usleep(1000);
+    sleep(1);
   }
 }
 
@@ -121,27 +119,29 @@ void queue_destroy(queue_t *q) {
     free(cur);
     cur = next;
   }
-
   free(q);
 }
 
 int queue_add(queue_t *q, int val) {
   execMutexlock(q);
 
+  // if queue is full
   while (q->count == q->max_count ||
-         flagCanShareData == PREVENT_SHARE) {
-    pthread_cond_wait(&q->cond_var, &q->mutex);
+         q->flagCanShareData == PROHIBIT_SHARE) {
+    if (pthread_cond_wait(&q->cond_var,
+                          &q->mutex)) { // ждём пока не поступит
+                                        // сигнала о том, что можем
+      // добавлять в очередь элемент
+      printf("queue_add() error in pthread_cond_wait(): %s\n",
+             strerror(errno));
+      abort();
+    }
   }
+  // получили сигнал о том, что можем добавлять
 
   q->add_attempts++; // +1 попытка записать элемент
 
   assert(q->count <= q->max_count);
-
-  if (q->count == q->max_count || flagCanShareData == PREVENT_SHARE) {
-    execSignal(q);
-    execMutexUnlock(q);
-    return 0;
-  }
 
   qnode_t *new = malloc(sizeof(qnode_t)); // malloc mem for one node
   if (!new) {
@@ -162,9 +162,9 @@ int queue_add(queue_t *q, int val) {
   q->count++; // количество элементов на текущий момент
   q->add_count++; // сколько добавили элементов
 
-  flagCanShareData = PREVENT_SHARE;
+  q->flagCanShareData = PROHIBIT_SHARE;
 
-  execSignal(q);
+  execSignal(q); // сигналим, что добавление эдемента произошло
   execMutexUnlock(q);
   return 1;
 }
@@ -175,16 +175,22 @@ int queue_get(queue_t *q, int *val) {
   q->get_attempts++; // +1 попытка достать элемент
   assert(q->count >= 0);
 
-  // типа пока пусто
-  while (!(q->count > 0) || flagCanShareData == ALLOW_SHARE) {
-    pthread_cond_wait(&q->cond_var, &q->mutex);
+  // пока пусто
+  while (!(q->count > 0) || q->flagCanShareData == ALLOW_SHARE) {
+    if (pthread_cond_wait(
+            &q->cond_var,
+            &q->mutex)) { // ждём, пока кто-то не просигналит
+                          // о том, что чот добавили
+      printf("queue_get() error in pthread_cond_wait: %s\n",
+             strerror(errno));
+      abort();
+    }
   }
 
   if (q->count == 0) {
     execMutexUnlock(q);
     return 0;
   }
-
   qnode_t *tmp = q->first; // save ptr to the 1st node
 
   *val = tmp->val;           // take val of the 1st node
@@ -194,7 +200,7 @@ int queue_get(queue_t *q, int *val) {
   q->count--;     // amount of elems in queue
   q->get_count++; // +1 successful попытка добавления элементов
 
-  flagCanShareData = ALLOW_SHARE;
+  q->flagCanShareData = ALLOW_SHARE;
 
   execSignal(q);
   execMutexUnlock(q);

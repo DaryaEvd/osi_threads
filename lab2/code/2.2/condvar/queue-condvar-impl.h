@@ -38,6 +38,8 @@ typedef struct _Queue {
 
   pthread_cond_t cond_var;
 
+  int flagCanShareData;
+
 } queue_t;
 /*
  То есть в идеале хотелось бы, чтобы когда мы пытаемся что-то

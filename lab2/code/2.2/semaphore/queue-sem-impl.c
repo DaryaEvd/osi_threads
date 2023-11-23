@@ -6,17 +6,40 @@
 
 #include "queue-sem-impl.h"
 
-void execWaitSem(queue_t *q) {
-  if (sem_wait(&q->sem) != 0) {
+void execMutexlock(queue_t *q) {
+  if (pthread_mutex_lock(&q->mutex)) {
+    printf("pthread_mutex_lock() error: %s \n", strerror(errno));
+    abort();
+  }
+}
+
+void execMutexUnlock(queue_t *q) {
+  if (pthread_mutex_unlock(&q->mutex)) {
+    printf("pthread_mutex_unlock() error: %s \n", strerror(errno));
+    abort();
+  }
+}
+
+void execWaitSem(sem_t *sem) {
+  if (sem_wait(sem) != 0) {
     printf("sem_wait() error: %s\n", strerror(errno));
   }
 }
 
-void execPostSem(queue_t *q) {
-  if (sem_post(&q->sem) != 0) {
+void execPostSem(sem_t *sem) {
+  if (sem_post(sem) != 0) {
     printf("sem_post() error: %s\n", strerror(errno));
   }
 }
+
+/* wait
+если 0 - ждёт
+если >= 1 - не блокируется, выполняется, отнимает от текущего значения
+1
+*/
+/* post - сигналит
+не блокируется, выполняется,  прибавляет к текущему значения 1
+*/
 
 qnode_t *create_node(int val) {
   qnode_t *new = malloc(sizeof(qnode_t));
@@ -37,7 +60,7 @@ void *qmonitor(void *arg) {
 
   while (1) {
     queue_print_stats(q);
-    usleep(1000);
+    sleep(1);
   }
 }
 
@@ -77,10 +100,26 @@ queue_t *queue_init(int max_count) {
        shared   memory   region   can  operate  on  the  semaphore
   using  sem_post(3), sem_wait(3), and so on.
   */
-  int errSemInit = sem_init(&q->sem, 0, 1);
+  int errSemInit = sem_init(&q->semEmpty, 0, 1); // 0 между потоками
+  // 1 - начальное значение семафора
   if (errSemInit) {
     printf("queue_init: sem_init() failed: %s\n",
            strerror(errSemInit));
+    abort();
+  }
+
+  errSemInit = sem_init(&q->semFull, 0, 1); // 0 между потоками
+  // 1 - начальное значение семафора
+  if (errSemInit) {
+    printf("queue_init: sem_init() failed: %s\n",
+           strerror(errSemInit));
+    abort();
+  }
+
+  int errMutexInit = pthread_mutex_init(&q->mutex, NULL);
+  if (errMutexInit) {
+    printf("queue_init: pthread_mutex_init() failed: %s\n",
+           strerror(errMutexInit));
     abort();
   }
 
@@ -105,9 +144,19 @@ void queue_destroy(queue_t *q) {
            strerror(err));
   }
 
-  err = sem_destroy(&q->sem);
+  err = sem_destroy(&q->semEmpty);
   if (err) {
     printf("queue_destroy(): () failed: %s\n", strerror(err));
+  }
+
+  err = sem_destroy(&q->semFull);
+  if (err) {
+    printf("queue_destroy(): () failed: %s\n", strerror(err));
+  }
+
+  if (pthread_mutex_destroy(&q->mutex)) {
+    printf("queue_destroy: pthread_mutex_destroy() error : %s\n",
+           strerror(errno));
   }
 
   qnode_t *cur = q->first;
@@ -121,13 +170,16 @@ void queue_destroy(queue_t *q) {
 }
 
 int queue_add(queue_t *q, int val) {
-  execWaitSem(q);
+  execWaitSem(&q->semFull);
+  execMutexlock(q);
+
   q->add_attempts++; // +1 попытка записать элемент
 
   assert(q->count <= q->max_count);
 
   if (q->count == q->max_count) {
-    execPostSem(q);
+    execMutexUnlock(q);
+    execPostSem(&q->semEmpty);
     return 0;
   }
 
@@ -150,19 +202,22 @@ int queue_add(queue_t *q, int val) {
   q->count++; // количество элементов на текущий момент
   q->add_count++; // сколько добавили элементов
 
-  execPostSem(q);
+  execMutexUnlock(q);
+  execPostSem(&q->semEmpty);
 
   return 1;
 }
 
 int queue_get(queue_t *q, int *val) {
-  execWaitSem(q);
+  execWaitSem(&q->semEmpty);
+  execMutexlock(q);
 
   q->get_attempts++; // +1 попытка достать элемент
   assert(q->count >= 0);
 
   if (q->count == 0) {
-    execPostSem(q);
+    execMutexUnlock(q);
+    execPostSem(&q->semFull);
     return 0;
   }
 
@@ -175,7 +230,8 @@ int queue_get(queue_t *q, int *val) {
   q->count--;     // amount of elems in queue
   q->get_count++; // +1 successful попытка добавления элементов
 
-  execPostSem(q);
+  execMutexUnlock(q);
+  execPostSem(&q->semFull);
 
   return 1;
 }
@@ -183,15 +239,11 @@ int queue_get(queue_t *q, int *val) {
 void queue_print_stats(queue_t *q) {
   // here we print amount of attempts и how many of them are lucky
 
-  execWaitSem(q);
-
   const int count = q->count;
   const long add_attempts = q->add_attempts;
   const long get_attempts = q->get_attempts;
   const long add_count = q->add_count;
   const long get_count = q->get_count;
-
-  execPostSem(q);
 
   printf("queue stats: current size %d; attempts: (%ld %ld %ld); "
          "counts (%ld %ld %ld)\n",
