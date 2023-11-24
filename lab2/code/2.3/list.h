@@ -16,6 +16,14 @@ typedef struct _Storage {
   Node *first;
 } Storage;
 
+/* ------------- strorage & node functions ------------- */
+Storage *createStorage();
+void appendNewNode(Storage *storage, const char *val);
+void deleteStorage(Storage *storage, Node *node);
+
+char *generateRandomString();
+
+/* ----------------- work with thread ----------------- */
 // readers of list, the don't modify the list
 void *countIncreasingLengthPairs(void *arg);
 void *countDecreasingLengthPairs(void *arg);
@@ -24,6 +32,6 @@ void *countEqualLengthPaits(void *arg);
 // writer of list, should modify the list
 void *swapElementsOfList(void *arg);
 
-char *generateRandomString();
+
 
 #endif // LIST_H__
