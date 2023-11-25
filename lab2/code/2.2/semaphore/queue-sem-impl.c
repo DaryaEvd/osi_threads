@@ -20,26 +20,24 @@ void execMutexUnlock(queue_t *q) {
   }
 }
 
+/* wait
+если 0 - ждёт
+если >= 1 - не блокируется, выполняется, отнимает от текущ значения 1
+*/
 void execWaitSem(sem_t *sem) {
   if (sem_wait(sem) != 0) {
     printf("sem_wait() error: %s\n", strerror(errno));
   }
 }
 
+/* post - сигналит
+не блокируется, выполняется, прибавляет к текущему значение 1
+*/
 void execPostSem(sem_t *sem) {
   if (sem_post(sem) != 0) {
     printf("sem_post() error: %s\n", strerror(errno));
   }
 }
-
-/* wait
-если 0 - ждёт
-если >= 1 - не блокируется, выполняется, отнимает от текущего значения
-1
-*/
-/* post - сигналит
-не блокируется, выполняется,  прибавляет к текущему значения 1
-*/
 
 qnode_t *create_node(int val) {
   qnode_t *new = malloc(sizeof(qnode_t));
@@ -100,18 +98,20 @@ queue_t *queue_init(int max_count) {
        shared   memory   region   can  operate  on  the  semaphore
   using  sem_post(3), sem_wait(3), and so on.
   */
-  int errSemInit = sem_init(&q->semEmpty, 0, 1); // 0 между потоками
-  // 1 - начальное значение семафора
+  int errSemInit = sem_init(&q->semEmpty, 0, 0); // 0 между потоками
+  // 0 - начальное значение ПУСТОГО семафора (тот, что забирает
+  // значения из очереди
   if (errSemInit) {
-    printf("queue_init: sem_init() failed: %s\n",
+    printf("queue_init: sem_init() semEmpty failed: %s\n",
            strerror(errSemInit));
     abort();
   }
 
   errSemInit = sem_init(&q->semFull, 0, 1); // 0 между потоками
-  // 1 - начальное значение семафора
+  // 1 - начальное значение ПОЛНОГО семафора (тот, что добавляет
+  // значения в очередь
   if (errSemInit) {
-    printf("queue_init: sem_init() failed: %s\n",
+    printf("queue_init: sem_init() semFull failed: %s\n",
            strerror(errSemInit));
     abort();
   }
@@ -146,12 +146,12 @@ void queue_destroy(queue_t *q) {
 
   err = sem_destroy(&q->semEmpty);
   if (err) {
-    printf("queue_destroy(): () failed: %s\n", strerror(err));
+    printf("queue_destroy(): semEmpty failed: %s\n", strerror(err));
   }
 
   err = sem_destroy(&q->semFull);
   if (err) {
-    printf("queue_destroy(): () failed: %s\n", strerror(err));
+    printf("queue_destroy(): semFull failed: %s\n", strerror(err));
   }
 
   if (pthread_mutex_destroy(&q->mutex)) {
@@ -170,7 +170,11 @@ void queue_destroy(queue_t *q) {
 }
 
 int queue_add(queue_t *q, int val) {
+  /* semFull = 0: wait, block thread till > 0;
+  semFull > 0: go and decrement it
+  */
   execWaitSem(&q->semFull);
+
   execMutexlock(q);
 
   q->add_attempts++; // +1 попытка записать элемент
@@ -203,6 +207,10 @@ int queue_add(queue_t *q, int val) {
   q->add_count++; // сколько добавили элементов
 
   execMutexUnlock(q);
+
+  /*
+  increment semEmpty
+  */
   execPostSem(&q->semEmpty);
 
   return 1;
@@ -231,6 +239,10 @@ int queue_get(queue_t *q, int *val) {
   q->get_count++; // +1 successful попытка добавления элементов
 
   execMutexUnlock(q);
+
+  /*
+    increment semFull
+  */
   execPostSem(&q->semFull);
 
   return 1;

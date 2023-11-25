@@ -30,8 +30,6 @@ void *countDecreasingLengthPairs(void *arg);
 void *countEqualLengthPaits(void *arg);
 
 // writer of list, should modify the list
-void *swapElementsOfList(void *arg);
-
-
+// void *swapElementsOfList(void *arg);
 
 #endif // LIST_H__

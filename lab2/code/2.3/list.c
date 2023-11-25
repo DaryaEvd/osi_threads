@@ -87,7 +87,7 @@ void *countEqualLengthPaits(void *arg) {
   return NULL;
 }
 
-void *swapElementsOfList(void *arg) { return NULL; }
+// void *swapElementsOfList(void *arg) {}
 
 char *generateRandomString(char *randomStr) {
   static char *charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOP"
@@ -154,11 +154,11 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  if (pthread_create(&swapThread, NULL, swapElementsOfList,
-                     (void *)&storage) != 0) {
-    printf("swap thread create: %s", strerror(errno));
-    return -1;
-  }
+  // if (pthread_create(&swapThread, NULL, swapElementsOfList,
+  //                    (void *)&storage) != 0) {
+  //   printf("swap thread create: %s", strerror(errno));
+  //   return -1;
+  // }
 
   return 0;
 }

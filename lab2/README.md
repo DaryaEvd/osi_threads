@@ -356,12 +356,29 @@ Here, you will learn about the various key differences between Spinlock and Mute
 ![09_pic](stuff/09.png)    
 
 То есть мы залочили `mutex`, начинаем проверять `flag`(мы имеем право проверять, мы в залоченном `mutex-e`, всё норм), и `flag` не наш. Тогда мы уходим в `wait`, говорим, что будем ждать на `cond_var-e`.   
-Но! Если мы хотим, чтоб этот `flag` поменялся, нам надо разлочит `mutex`. И функция `wait` принимает 2 аргумента: условную переменную и мутекс.   
+Но! Если мы хотим, чтоб этот `flag` поменялся, нам надо разлочить `mutex`. И функция `wait` принимает 2 аргумента: условную переменную и мутекс.   
 Поэтому перед тем как устроить ожидание на `cond_var-e`, она разлочивает `mutex`. А после того, как кто-то просигналил, `wait` захватывает `mutex` снова.   
 Типа `wait` внутри выглядит как `unlock_mutex`, `wait`, `lock_mutex`.  
 `mutex` защищает предикат, по которому мы определяем, что должно происходить: можем мы работать или нет.   
 
 **!!! Важно !!!** `cond_var` используется в связке с `mutex`  
 
+**Почитать можно вот**  
+- [С оракла](https://docs.oracle.com/cd/E19455-01/806-5257/6je9h032r/index.html)
+
+
 ### SEMAPHORE  
-Читаем [статью](https://habr.com/ru/articles/261273/) 
+Читаем 
+- [статью](https://habr.com/ru/articles/261273/) 
+- [еще статья](https://www.geeksforgeeks.org/use-posix-semaphores-c/)  
+- [статья про сравнение mutex and semaphore](https://coderlessons.com/tutorials/akademicheskii/osnovy-operatsionnykh-sistem/3-miuteks-protiv-semafora)  
+
+
+## Про semaphore & mutex 
+- [main article](https://jlmedina123.wordpress.com/2014/04/08/255/)
+- [статья](https://greenteapress.com/thinkos/html/thinkos013.html)
+- [еще статья](https://see.stanford.edu/materials/icsppcs107/23-Concurrency-Examples.pdf)
+
+
+
+

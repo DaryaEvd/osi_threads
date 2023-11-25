@@ -37,8 +37,8 @@ typedef struct _Queue {
 
   pthread_mutex_t mutex;
 
-  sem_t semEmpty; // aka целочисленная переменная
-  sem_t semFull;
+  sem_t semEmpty; // забирает значения из очереди
+  sem_t semFull; // доабвляет значения в очередь
 
 } queue_t;
 /*
