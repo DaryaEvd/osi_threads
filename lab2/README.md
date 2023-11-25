@@ -381,4 +381,4 @@ Here, you will learn about the various key differences between Spinlock and Mute
 
 
 
-
+**ВАЖНО** _У мьютекса ЕСТЬ OWNER, а у семафора НЕТ OWNER-a_ !!! 
