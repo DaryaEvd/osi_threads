@@ -1,5 +1,5 @@
 TARGET_1 = list.o
-SRCS_1 = list.c 
+SRCS_1 = list-main.c 
 SRCS_2 = list-impl.c
 
 CC=gcc

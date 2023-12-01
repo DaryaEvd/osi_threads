@@ -5,12 +5,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-Storage *createStorage() {
+Storage *createStorage(int capacity) {
   Storage *storage = (Storage *)malloc(sizeof(Storage));
   if (!storage) {
     printf("createStrorage err: %s", strerror(errno));
     abort();
   }
+  storage->capacity = capacity;
   storage->first = NULL;
   return storage;
 }
@@ -22,33 +23,57 @@ void appendNewNode(Storage *storage, const char *val) {
     abort();
   }
 
+  if (storage->first != NULL) {
+    Node *node = storage->first;
+    while (node->next != NULL) {
+      node = node->next;
+    }
+    node->next = newNode;
+  } else {
+    storage->first = newNode;
+  }
+
   strncpy(newNode->value, val, MAX_STRING_LENGTH);
   newNode->value[MAX_STRING_LENGTH - 1] = '\0';
-
+  newNode->next = NULL;
   pthread_mutex_init(&(newNode->sync), NULL);
-
-  storage->first = newNode;
 }
 
-void deleteStorage(Storage *storage, Node *node) {
-  if (storage->first == NULL || node == NULL) {
-    return;
+void printStorage(Storage *storage) {
+  Node *curr = storage->first;
+  while (curr != NULL) {
+    printf("%s\n", curr->value);
+    curr = curr->next;
   }
+}
 
-  if (storage->first == node) {
-    storage->first = storage->first;
-  } else {
-    Node *currNode = storage->first;
+// void deleteStorage(Storage *storage) {
+//   if (storage->first == NULL) {
+//     return;
+//   }
 
-    while (currNode != NULL) {
-      Node *tmp = currNode;
-      currNode = currNode->next;
-      free(tmp);
-    }
+//   Node *currNode = storage->first;
+
+//   for(int i = 0; i < storage->capacity; i++) {
+//     currNode = currNode->next;
+//   }
+
+//   Node *toDelete = currNode->next;
+//   currNode->next = toDelete->next;
+
+//   free(toDelete);
+
+//   pthread_mutex_destroy(&currNode->sync);
+//   free(storage);
+// }
+
+void deleteStorage(Storage *storage) {
+  Node *node = storage->first;
+  while (node != NULL) {
+    Node *nextNode = node->next;
+    pthread_mutex_destroy(&(node->sync));
     free(node);
+    node = nextNode;
   }
-
-  pthread_mutex_destroy(&node->sync);
-  free(node);
   free(storage);
 }

@@ -14,14 +14,17 @@ typedef struct _Node {
 
 typedef struct _Storage {
   Node *first;
+  int capacity;
 } Storage;
 
 /* ------------- strorage & node functions ------------- */
-Storage *createStorage();
+Storage *createStorage(int capacity);
 void appendNewNode(Storage *storage, const char *val);
-void deleteStorage(Storage *storage, Node *node);
+void deleteStorage(Storage *storage);
 
-char *generateRandomString();
+char *generateRandomString(char *);
+
+void printStorage(Storage *storage);
 
 /* ----------------- work with thread ----------------- */
 // readers of list, the don't modify the list

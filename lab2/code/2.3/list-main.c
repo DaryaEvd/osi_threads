@@ -1,5 +1,6 @@
 #include "list.h"
 
+#include <stdatomic.h>
 #include <errno.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -26,21 +27,39 @@ void execMutexUnlock(pthread_mutex_t *mutex) {
 }
 
 void *countIncreasingLengthPairs(void *arg) {
+  printf("increasing [%d %d %d]\n", getpid(), getppid(), gettid());
   Storage *storage = (Storage *)arg;
   while (1) {
     Node *curr = storage->first;
+    if (curr == NULL || curr->next == NULL) {
+      printf("Ooops storage is empty\n"); // ???
+      // continue;
+    }
+    size_t prevLength =
+        strlen(curr->value); // длина строки в текущей ноде
+
+    volatile int counterPairs = 0;
     while (curr != NULL && curr->next != NULL) {
       execMutexlock(&(curr->sync));
       execMutexlock(&(curr->next->sync));
 
-      if (strlen(curr->value) < strlen(curr->next->value)) {
-        INCREASING_LENGTH_COUNT++;
-      }
+      size_t currLength = strlen(curr->value);
 
       execMutexUnlock(&(curr->next->sync));
       execMutexUnlock(&(curr->sync));
+
+      if (prevLength < currLength) {
+        counterPairs++;
+      }
+
       curr = curr->next;
+      prevLength = currLength;
     }
+
+    printf("amount of pairs of strings in increaing length: %d",
+           counterPairs);
+
+    INCREASING_LENGTH_COUNT++;
   }
   return NULL;
 }
@@ -104,14 +123,16 @@ char *generateRandomString(char *randomStr) {
   return randomStr;
 }
 
-void generateValuesInStorage(Storage *storage, const int countNodes) {
-  for (size_t i = 0; i < countNodes; i++) {
+void generateValuesInStorage(Storage *storage) {
+  for (size_t i = 0; i < storage->capacity; i++) {
     char *randomStr = malloc(MAX_STRING_LENGTH * sizeof(char *));
     if (!randomStr) {
       printf("generateRandomString() err: %s", strerror(errno));
       exit(EXIT_FAILURE);
     }
     generateRandomString(randomStr);
+    // printf("idx: %ld, str: '%s'\n", i, randomStr);
+
     appendNewNode(storage, randomStr);
   }
 }
@@ -125,14 +146,14 @@ int main(int argc, char **argv) {
 
   srand(time(0));
 
-  Storage *storage = createStorage();
-
-  generateValuesInStorage(storage, countNodes);
+  Storage *storage = createStorage(countNodes);
+  generateValuesInStorage(storage);
+  printStorage(storage);
 
   pthread_t incrementThread;
-  pthread_t decrementThread;
-  pthread_t equalThread;
-  pthread_t swapThread;
+  // pthread_t decrementThread;
+  // pthread_t equalThread;
+  // pthread_t swapThread;
 
   if (pthread_create(&incrementThread, NULL,
                      countIncreasingLengthPairs,
@@ -141,24 +162,32 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  if (pthread_create(&decrementThread, NULL,
-                     countDecreasingLengthPairs,
-                     (void *)&storage) != 0) {
-    printf("decr thread create: %s", strerror(errno));
-    return -1;
-  }
+  printf("INCREASING: %ld\n", INCREASING_LENGTH_COUNT);
 
-  if (pthread_create(&equalThread, NULL, countEqualLengthPaits,
-                     (void *)&storage) != 0) {
-    printf("equal thread create: %s", strerror(errno));
-    return -1;
-  }
+  printf("OOOAOOAOAOAOA\n");
+
+  // if (pthread_create(&decrementThread, NULL,
+  //                    countDecreasingLengthPairs,
+  //                    (void *)&storage) != 0) {
+  //   printf("decr thread create: %s", strerror(errno));
+  //   return -1;
+  // }
+
+  // if (pthread_create(&equalThread, NULL, countEqualLengthPaits,
+  //                    (void *)&storage) != 0) {
+  //   printf("equal thread create: %s", strerror(errno));
+  //   return -1;
+  // }
 
   // if (pthread_create(&swapThread, NULL, swapElementsOfList,
   //                    (void *)&storage) != 0) {
   //   printf("swap thread create: %s", strerror(errno));
   //   return -1;
   // }
+
+  // deleteStorage(storage);
+  // printf("after deleting\n");
+  // printStorage(storage);
 
   return 0;
 }
