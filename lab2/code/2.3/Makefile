@@ -1,6 +1,7 @@
 TARGET_1 = list.o
 SRCS_1 = list-main.c 
-SRCS_2 = list-impl.c
+SRCS_2 = list-implement.c
+SRCS_3 = stuff.c
 
 CC=gcc
 RM=rm
@@ -10,8 +11,8 @@ INCLUDE_DIR="."
 
 all: ${TARGET_1}
 
-${TARGET_1}: list.h ${SRCS_1} ${SRCS_2}
-	${CC} ${CFLAGS} -I${INCLUDE_DIR} ${SRCS_1} ${SRCS_2} ${LIBS} -o ${TARGET_1}
+${TARGET_1}: list.h stuff.h ${SRCS_1} ${SRCS_2} ${SRCS_3} 
+	${CC} ${CFLAGS} -I${INCLUDE_DIR} ${SRCS_1} ${SRCS_2} ${SRCS_3} ${LIBS} -o ${TARGET_1}
 
 clean:
 	${RM} -f *.o ${TARGET_1}

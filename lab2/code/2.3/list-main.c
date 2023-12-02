@@ -1,6 +1,6 @@
 #include "list.h"
+#include "stuff.h"
 
-#include <stdatomic.h>
 #include <errno.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -8,9 +8,15 @@
 #include <string.h>
 #include <unistd.h>
 
-size_t INCREASING_LENGTH_COUNT = 0;
-size_t DESCENDING_LENGTH_COUNT = 0;
-size_t EQUAL_LENGTH_COUNT = 0;
+#define SWAPS_AMOUNT 3
+#define SWAP1 0
+#define SWAP2 1
+#define SWAP3 2
+
+int INCREASING_LENGTH_COUNT = 0;
+int DECREASING_LENGTH_COUNT = 0;
+int EQUAL_LENGTH_COUNT = 0;
+int SWAP_PERMUTATIONS_COUNT = 0;
 
 void execMutexlock(pthread_mutex_t *mutex) {
   if (pthread_mutex_lock(mutex)) {
@@ -26,115 +32,213 @@ void execMutexUnlock(pthread_mutex_t *mutex) {
   }
 }
 
-void *countIncreasingLengthPairs(void *arg) {
-  printf("increasing [%d %d %d]\n", getpid(), getppid(), gettid());
-  Storage *storage = (Storage *)arg;
+void *countIncreasingLengthPairs(void *data) {
+  Storage *storage = (Storage *)data;
+
   while (1) {
     Node *curr = storage->first;
     if (curr == NULL || curr->next == NULL) {
-      printf("Ooops storage is empty\n"); // ???
-      // continue;
+      printf("Not enough elems in storage to increase\n");
+      break;
     }
-    size_t prevLength =
-        strlen(curr->value); // длина строки в текущей ноде
+    Node *curr2;
+    Node *tmp;
+    while (1) {
+      if (curr != NULL) {
+        execMutexlock(&curr->sync);
+        if (curr->next != NULL) {
+          execMutexlock(&curr->next->sync);
+          volatile int amountPairIncrease = 0;
+          curr2 = curr->next;
+          if (strlen(curr->value) < strlen(curr2->value)) {
+            amountPairIncrease++;
+          }
+          tmp = curr;
+          curr = curr->next;
 
-    volatile int counterPairs = 0;
-    while (curr != NULL && curr->next != NULL) {
-      execMutexlock(&(curr->sync));
-      execMutexlock(&(curr->next->sync));
+          execMutexUnlock(&tmp->sync);
+          execMutexUnlock(&curr->sync);
 
-      size_t currLength = strlen(curr->value);
+        } else {
+          tmp = curr;
+          curr = curr->next;
 
-      execMutexUnlock(&(curr->next->sync));
-      execMutexUnlock(&(curr->sync));
-
-      if (prevLength < currLength) {
-        counterPairs++;
+          execMutexUnlock(&tmp->sync);
+        }
+      } else if (curr == NULL) {
+        break;
+      } else {
+        curr = curr->next;
       }
-
-      curr = curr->next;
-      prevLength = currLength;
     }
-
-    printf("amount of pairs of strings in increaing length: %d",
-           counterPairs);
-
     INCREASING_LENGTH_COUNT++;
   }
   return NULL;
 }
 
-void *countDecreasingLengthPairs(void *arg) {
-  Storage *storage = (Storage *)arg;
+void *countDecreasingLengthPairs(void *data) {
+  Storage *storage = (Storage *)data;
+  if (storage->first == NULL || storage->first->next == NULL) {
+    printf("Not enough elems in storage to descrease\n");
+    return NULL;
+  }
   while (1) {
     Node *curr = storage->first;
-    while (curr != NULL && curr->next != NULL) {
-      execMutexlock(&(curr->sync));
-      execMutexlock(&(curr->next->sync));
+    Node *curr2;
+    Node *tmp;
+    while (1) {
+      if (curr != NULL) {
+        execMutexlock(&curr->sync);
 
-      if (strlen(curr->value) > strlen(curr->next->value)) {
-        DESCENDING_LENGTH_COUNT++;
+        if (curr->next != NULL) {
+          execMutexlock(&curr->next->sync);
+          volatile int amountPairDecrease = 0;
+          curr2 = curr->next;
+          if (strlen(curr->value) == strlen(curr2->value)) {
+            amountPairDecrease++;
+          }
+          tmp = curr;
+          curr = curr->next;
+ 
+          execMutexUnlock(&tmp->sync);
+          execMutexUnlock(&curr->sync);
+        } else {
+          tmp = curr;
+          curr = curr->next;
+
+          execMutexUnlock(&tmp->sync);
+        }
+      } else if (curr == NULL) {
+        break;
+      } else {
+        curr = curr->next;
       }
-
-      execMutexUnlock(&(curr->next->sync));
-      execMutexUnlock(&(curr->sync));
-      curr = curr->next;
     }
+    DECREASING_LENGTH_COUNT++;
   }
-
   return NULL;
 }
 
-void *countEqualLengthPaits(void *arg) {
-  Storage *storage = (Storage *)arg;
-  while (1) {
-    Node *curr = storage->first;
-    while (curr != NULL && curr->next != NULL) {
-      execMutexlock(&(curr->sync));
-      execMutexlock(&(curr->next->sync));
-
-      if (strlen(curr->value) == strlen(curr->next->value)) {
-        EQUAL_LENGTH_COUNT++;
-      }
-
-      execMutexUnlock(&(curr->next->sync));
-      execMutexUnlock(&(curr->sync));
-      curr = curr->next;
-    }
+void *countEqualLengthPaits(void *data) {
+  Storage *storage = (Storage *)data;
+  if (storage->first == NULL || storage->first->next == NULL) {
+    printf("Not enough elems in storage to equal\n");
+    return NULL;
   }
 
+  while (1) {
+    Node *curr = storage->first;
+    Node *curr2;
+    Node *tmp;
+    while (1) {
+      if (curr != NULL) {
+        execMutexlock(&curr->sync);
+        if (curr->next != NULL) {
+          execMutexlock(&curr->next->sync);
+          volatile int amountPairEqual = 0;
+          curr2 = curr->next;
+          if (strlen(curr->value) > strlen(curr2->value)) {
+            amountPairEqual++;
+          }
+          tmp = curr;
+          curr = curr->next;
+         
+          execMutexUnlock(&tmp->sync);
+          execMutexUnlock(&curr->sync);
+        } else {
+          tmp = curr;
+          curr = curr->next;
+          
+          execMutexUnlock(&tmp->sync);
+        }
+      } else if (curr == NULL) {
+        break;
+      } else {
+        curr = curr->next;
+      }
+    }
+    EQUAL_LENGTH_COUNT++;
+  }
   return NULL;
 }
 
-// void *swapElementsOfList(void *arg) {}
+void *countSwapPermutations(void *data) {
 
-char *generateRandomString(char *randomStr) {
-  static char *charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOP"
-                         "QRSTUVWXYZ0123456789";
-  size_t randomLengthStr =
-      (1.0 + 100.0 * rand() / RAND_MAX); // nonzero
+  SwapInfo *swapInfo = (SwapInfo *)data;
+  Storage *storage = swapInfo->storage;
+  int *counter = swapInfo->swapCounter;
 
-  for (size_t i = 0; i < randomLengthStr - 1; i++) {
-    size_t randSymb = rand() % (sizeof(charset) - 1) % 5;
-    randomStr[i] = charset[randSymb];
+  while (1) {
+    Node *curr1 = storage->first;
+    if (curr1 == NULL || curr1->next == NULL ||
+        curr1->next->next == NULL) {
+      printf(
+          "Not enough elems in storage to SWAP_PERMUTATIONS_COUNT\n");
+      break;
+    }
+    Node *curr2;
+    Node *curr3;
+    Node *tmp;
+    while (1) {
+      if (curr1 != NULL) {
+        execMutexlock(&curr1->sync);
+
+        if (curr1->next != NULL) {
+          execMutexlock(&curr1->next->sync);
+          if (curr1->next->next != NULL) {
+            execMutexlock(&curr1->next->next->sync);
+            curr2 = curr1->next;
+            curr3 = curr1->next->next;
+            if (rand() % 2 == 0) {
+              curr2->next = curr3->next;
+              curr3->next = curr2;
+              curr1->next = curr3;
+              (*counter)++;
+            }
+            tmp = curr1;
+            curr1 = tmp->next;
+            curr2 = curr1->next;
+
+            execMutexUnlock(&tmp->sync);
+            execMutexUnlock(&curr1->sync);
+            execMutexUnlock(&curr2->sync);
+
+          } else {
+            tmp = curr1;
+            curr1 = curr1->next;
+
+            execMutexUnlock(&tmp->sync);
+            execMutexUnlock(&curr1->sync);
+          }
+        } else {
+          tmp = curr1;
+          curr1 = curr1->next;
+
+          execMutexUnlock(&tmp->sync);
+        }
+      } else if (curr1 == NULL) {
+        break;
+      } else {
+        curr1 = curr1->next;
+      }
+    }
   }
-  randomStr[randomLengthStr] = '\0';
-
-  return randomStr;
+  return NULL;
 }
 
-void generateValuesInStorage(Storage *storage) {
-  for (size_t i = 0; i < storage->capacity; i++) {
-    char *randomStr = malloc(MAX_STRING_LENGTH * sizeof(char *));
-    if (!randomStr) {
-      printf("generateRandomString() err: %s", strerror(errno));
-      exit(EXIT_FAILURE);
-    }
-    generateRandomString(randomStr);
-    // printf("idx: %ld, str: '%s'\n", i, randomStr);
+void *countMonitor(void *arg) {
+  int *swapCounters = (int *)arg;
+  while (1) {
+    printf(
+        "incr: %d, decr: %d, equal: %d, swap1: %d, swap2: %d, swap3: "
+        "%d\n",
+        INCREASING_LENGTH_COUNT, DECREASING_LENGTH_COUNT,
+        EQUAL_LENGTH_COUNT, swapCounters[SWAP1], swapCounters[SWAP2],
+        swapCounters[SWAP3]);
 
-    appendNewNode(storage, randomStr);
+    sleep(1);
   }
+  return NULL;
 }
 
 int main(int argc, char **argv) {
@@ -148,46 +252,75 @@ int main(int argc, char **argv) {
 
   Storage *storage = createStorage(countNodes);
   generateValuesInStorage(storage);
-  printStorage(storage);
+  // printStorage(storage);
 
   pthread_t incrementThread;
-  // pthread_t decrementThread;
-  // pthread_t equalThread;
-  // pthread_t swapThread;
-
+  pthread_t decrementThread;
+  pthread_t equalThread;
   if (pthread_create(&incrementThread, NULL,
                      countIncreasingLengthPairs,
-                     (void *)&storage) != 0) {
+                     (void *)storage) != 0) {
     printf("incr thread create: %s", strerror(errno));
     return -1;
   }
 
-  printf("INCREASING: %ld\n", INCREASING_LENGTH_COUNT);
+  if (pthread_create(&decrementThread, NULL,
+                     countDecreasingLengthPairs,
+                     (void *)storage) != 0) {
+    printf("decr thread create: %s", strerror(errno));
+    return -1;
+  }
 
-  printf("OOOAOOAOAOAOA\n");
+  if (pthread_create(&equalThread, NULL, countEqualLengthPaits,
+                     (void *)storage) != 0) {
+    printf("EQUAL_LENGTH_COUNT thread create: %s", strerror(errno));
+    return -1;
+  }
 
-  // if (pthread_create(&decrementThread, NULL,
-  //                    countDecreasingLengthPairs,
-  //                    (void *)&storage) != 0) {
-  //   printf("decr thread create: %s", strerror(errno));
-  //   return -1;
-  // }
+  pthread_t swapThread1;
+  pthread_t swapThread2;
+  pthread_t swapThread3;
 
-  // if (pthread_create(&equalThread, NULL, countEqualLengthPaits,
-  //                    (void *)&storage) != 0) {
-  //   printf("equal thread create: %s", strerror(errno));
-  //   return -1;
-  // }
+  int *swapCounters = calloc(SWAPS_AMOUNT, sizeof(int));
+  SwapInfo swapInfo1 = {storage, &swapCounters[SWAP1]};
+  SwapInfo swapInfo2 = {storage, &swapCounters[SWAP2]};
+  SwapInfo swapInfo3 = {storage, &swapCounters[SWAP3]};
 
-  // if (pthread_create(&swapThread, NULL, swapElementsOfList,
-  //                    (void *)&storage) != 0) {
-  //   printf("swap thread create: %s", strerror(errno));
-  //   return -1;
-  // }
+  if (pthread_create(&swapThread1, NULL, countSwapPermutations,
+                     &swapInfo1) != 0) {
+    printf("SWAP_PERMUTATIONS_COUNT 1 thread create: %s",
+           strerror(errno));
+    return -1;
+  }
 
-  // deleteStorage(storage);
-  // printf("after deleting\n");
-  // printStorage(storage);
+  if (pthread_create(&swapThread2, NULL, countSwapPermutations,
+                     &swapInfo2) != 0) {
+    printf("SWAP_PERMUTATIONS_COUNT 2 thread create: %s",
+           strerror(errno));
+    return -1;
+  }
+
+  if (pthread_create(&swapThread3, NULL, countSwapPermutations,
+                     &swapInfo3) != 0) {
+    printf("SWAP_PERMUTATIONS_COUNT 3 thread create: %s",
+           strerror(errno));
+    return -1;
+  }
+
+  pthread_t display;
+  if (pthread_create(&display, NULL, countMonitor, swapCounters) !=
+      0) {
+    printf("display thread create: %s", strerror(errno));
+    return -1;
+  }
+
+  pthread_join(incrementThread, NULL);
+  pthread_join(decrementThread, NULL);
+  pthread_join(equalThread, NULL);
+  pthread_join(swapThread1, NULL);
+  pthread_join(swapThread2, NULL);
+  pthread_join(swapThread3, NULL);
+  pthread_join(display, NULL);
 
   return 0;
 }
