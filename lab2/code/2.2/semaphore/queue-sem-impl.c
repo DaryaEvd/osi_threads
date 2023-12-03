@@ -6,14 +6,14 @@
 
 #include "queue-sem-impl.h"
 
-void execMutexlock(queue_t *q) {
+void execMutexlock(queueT *q) {
   if (pthread_mutex_lock(&q->mutex)) {
     printf("pthread_mutex_lock() error: %s \n", strerror(errno));
     abort();
   }
 }
 
-void execMutexUnlock(queue_t *q) {
+void execMutexUnlock(queueT *q) {
   if (pthread_mutex_unlock(&q->mutex)) {
     printf("pthread_mutex_unlock() error: %s \n", strerror(errno));
     abort();
@@ -39,20 +39,8 @@ void execPostSem(sem_t *sem) {
   }
 }
 
-qnode_t *create_node(int val) {
-  qnode_t *new = malloc(sizeof(qnode_t));
-  if (!new) {
-    printf("Cannot allocate memory for new node\n");
-    abort();
-  }
-  new->val = val;
-  new->next = NULL;
-
-  return new;
-}
-
 void *qmonitor(void *arg) {
-  queue_t *q = (queue_t *)arg;
+  queueT *q = (queueT *)arg;
 
   printf("qmonitor: [%d %d %d]\n", getpid(), getppid(), gettid());
 
@@ -62,8 +50,8 @@ void *qmonitor(void *arg) {
   }
 }
 
-queue_t *queueInit(int maxCount) {
-  queue_t *q = malloc(sizeof(queue_t)); // malloc mem for structure
+queueT *queueInit(int maxCount) {
+  queueT *q = malloc(sizeof(queueT)); // malloc mem for structure
   if (!q) {
     printf("Cannot allocate memory for a queue\n");
     abort();
@@ -137,7 +125,7 @@ queue_t *queueInit(int maxCount) {
   return q; // return a ptr to queue
 }
 
-void queueDestroy(queue_t *q) {
+void queueDestroy(queueT *q) {
   int err = pthread_cancel(q->qmonitorTid);
   if (err) {
     printf("queueDestroy(): pthread_cancel() failed: %s\n",
@@ -159,9 +147,9 @@ void queueDestroy(queue_t *q) {
            strerror(errno));
   }
 
-  qnode_t *cur = q->first;
+  qnodeT *cur = q->first;
   while (cur != NULL) {
-    qnode_t *next = cur->next;
+    qnodeT *next = cur->next;
     free(cur);
     cur = next;
   }
@@ -169,7 +157,7 @@ void queueDestroy(queue_t *q) {
   free(q);
 }
 
-int queueAdd(queue_t *q, int val) {
+int queueAdd(queueT *q, int val) {
   /* semFull = 0: wait, block thread till > 0;
   semFull > 0: go and decrement it
   */
@@ -187,7 +175,7 @@ int queueAdd(queue_t *q, int val) {
     return 0;
   }
 
-  qnode_t *new = malloc(sizeof(qnode_t)); // malloc mem for one node
+  qnodeT *new = malloc(sizeof(qnodeT)); // malloc mem for one node
   if (!new) {
     printf("Cannot allocate memory for new node\n");
     abort();
@@ -216,7 +204,7 @@ int queueAdd(queue_t *q, int val) {
   return 1;
 }
 
-int queueGet(queue_t *q, int *val) {
+int queueGet(queueT *q, int *val) {
   execWaitSem(&q->semEmpty);
   execMutexlock(q);
 
@@ -229,7 +217,7 @@ int queueGet(queue_t *q, int *val) {
     return 0;
   }
 
-  qnode_t *tmp = q->first; // save ptr to the 1st node
+  qnodeT *tmp = q->first; // save ptr to the 1st node
 
   *val = tmp->val;           // take val of the 1st node
   q->first = q->first->next; // now next node is the 1st
@@ -248,7 +236,7 @@ int queueGet(queue_t *q, int *val) {
   return 1;
 }
 
-void queuePrintStats(queue_t *q) {
+void queuePrintStats(queueT *q) {
   // here we print amount of attempts и how many of them are lucky
 
   const int count = q->count;

@@ -37,7 +37,7 @@ void set_cpu(int n) {
 void *reader(void *arg) {
   // ожидается последовательная запись чисел, начиная с нуля
   int expected = 0;
-  queue_t *q = (queue_t *)arg;
+  queueT *q = (queueT *)arg;
   printf("reader [%d %d %d]\n", getpid(), getppid(), gettid());
 
   set_cpu(1);
@@ -66,7 +66,7 @@ void *reader(void *arg) {
 // последовательно пишет чиселки, начиная с нуля
 void *writer(void *arg) {
   int i = 0;
-  queue_t *q = (queue_t *)arg;
+  queueT *q = (queueT *)arg;
   printf("writer [%d %d %d]\n", getpid(), getppid(), gettid());
 
   set_cpu(2);
@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
   printf("main [%d %d %d]\n", getpid(), getppid(), gettid());
 
   const int sizeQueue = atoi(argv[1]);
-  queue_t *q = queueInit(sizeQueue);
+  queueT *q = queueInit(sizeQueue);
 
   pthread_t tidReader;
   int createErr = pthread_create(&tidReader, NULL, reader, q);

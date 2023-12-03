@@ -11,7 +11,7 @@
 #include "queue.h"
 
 int main() {
-  queue_t *q;
+  queueT *q;
 
   printf("main: [%d %d %d]\n", getpid(), getppid(), gettid());
 

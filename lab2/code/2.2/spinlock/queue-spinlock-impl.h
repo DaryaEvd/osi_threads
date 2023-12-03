@@ -13,11 +13,11 @@
 typedef struct _QueueNode {
   int val;
   struct _QueueNode *next;
-} qnode_t;
+} qnodeT;
 
 typedef struct _Queue {
-  qnode_t *first;
-  qnode_t *last;
+  qnodeT *first;
+  qnodeT *last;
 
   pthread_t qmonitorTid;
 
@@ -36,7 +36,7 @@ typedef struct _Queue {
 
   pthread_spinlock_t lock; // 1 - можно залочить, 0 - низя
 
-} queue_t;
+} queueT;
 /*
  То есть в идеале хотелось бы, чтобы когда мы пытаемся что-то
  добавить, мы могли иметь возможность добавить. А когда хотим что-то
@@ -44,10 +44,10 @@ typedef struct _Queue {
  Для этого мы и сравниваем queue statistics parameters))
  */
 
-queue_t *queueInit(int maxCount);
-void queueDestroy(queue_t *q);
-int queueAdd(queue_t *q, int val);
-int queueGet(queue_t *q, int *val);
-void queuePrintStats(queue_t *q);
+queueT *queueInit(int maxCount);
+void queueDestroy(queueT *q);
+int queueAdd(queueT *q, int val);
+int queueGet(queueT *q, int *val);
+void queuePrintStats(queueT *q);
 
 #endif // __FITOS_QUEUE_H__
