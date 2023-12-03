@@ -15,28 +15,28 @@ int main() {
 
   printf("main: [%d %d %d]\n", getpid(), getppid(), gettid());
 
-  q = queue_init(1000);
+  q = queueInit(1000);
 
   // здесь добавляем значение в очередь
   for (int i = 0; i < 10; i++) {
-    int ok = queue_add(q, i);
+    int ok = queueAdd(q, i);
 
     printf("ok %d: add value %d\n", ok, i);
 
-    queue_print_stats(q);
+    queuePrintStats(q);
   }
 
   // здесь достаем это значение из очереди
   for (int i = 0; i < 12; i++) {
     int val = -1;
-    int ok = queue_get(q, &val);
+    int ok = queueGet(q, &val);
 
     printf("ok: %d: get value %d\n", ok, val);
 
-    queue_print_stats(q);
+    queuePrintStats(q);
   }
 
-  queue_destroy(q);
+  queueDestroy(q);
 
   return 0;
 }

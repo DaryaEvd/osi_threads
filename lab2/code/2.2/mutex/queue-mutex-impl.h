@@ -19,20 +19,20 @@ typedef struct _Queue {
   qnode_t *first;
   qnode_t *last;
 
-  pthread_t qmonitor_tid;
+  pthread_t qmonitorTid;
 
   int count; // amount of elements in a current moment
-  int max_count;
+  int maxCount;
 
   // queue statistics
-  long add_attempts; // типа сколько попыток было сделано, чтоб
+  long addAttempts; // типа сколько попыток было сделано, чтоб
                      // запистать элемент
-  long get_attempts; // количество попыток прочитать элемент (не факт,
+  long getAttempts; // количество попыток прочитать элемент (не факт,
                      // что смогли прочитать из очереди, тк она может
                      // быть пустой вообще, например)
-  long add_count; // сколько из этих попыток было успешных, то есть
+  long addCount; // сколько из этих попыток было успешных, то есть
                   // вообще сколько добавли элементов
-  long get_count; // сколько прочитали элементов
+  long getCount; // сколько прочитали элементов
 
   pthread_mutex_t mutex;
 
@@ -44,10 +44,10 @@ typedef struct _Queue {
  Для этого мы и сравниваем queue statistics parameters))
  */
 
-queue_t *queue_init(int max_count);
-void queue_destroy(queue_t *q);
-int queue_add(queue_t *q, int val);
-int queue_get(queue_t *q, int *val);
-void queue_print_stats(queue_t *q);
+queue_t *queueInit(int maxCount);
+void queueDestroy(queue_t *q);
+int queueAdd(queue_t *q, int val);
+int queueGet(queue_t *q, int *val);
+void queuePrintStats(queue_t *q);
 
 #endif // __FITOS_QUEUE_H__

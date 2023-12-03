@@ -44,7 +44,7 @@ void *reader(void *arg) {
 
   while (1) {
     int val = -1;
-    int ok = queue_get(q, &val);
+    int ok = queueGet(q, &val);
     if (!ok) {
       continue;
     }
@@ -72,7 +72,7 @@ void *writer(void *arg) {
   set_cpu(2);
 
   while (1) {
-    int ok = queue_add(q, i);
+    int ok = queueAdd(q, i);
     if (!ok) {
       continue;
     }
@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
   printf("main [%d %d %d]\n", getpid(), getppid(), gettid());
 
   const int sizeQueue = atoi(argv[1]);
-  queue_t *q = queue_init(sizeQueue);
+  queue_t *q = queueInit(sizeQueue);
 
   pthread_t tidReader;
   int createErr = pthread_create(&tidReader, NULL, reader, q);
@@ -129,7 +129,7 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  queue_destroy(q);
+  queueDestroy(q);
 
   pthread_exit(NULL);
 

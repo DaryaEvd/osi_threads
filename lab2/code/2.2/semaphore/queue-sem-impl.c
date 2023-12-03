@@ -57,12 +57,12 @@ void *qmonitor(void *arg) {
   printf("qmonitor: [%d %d %d]\n", getpid(), getppid(), gettid());
 
   while (1) {
-    queue_print_stats(q);
+    queuePrintStats(q);
     sleep(1);
   }
 }
 
-queue_t *queue_init(int max_count) {
+queue_t *queueInit(int maxCount) {
   queue_t *q = malloc(sizeof(queue_t)); // malloc mem for structure
   if (!q) {
     printf("Cannot allocate memory for a queue\n");
@@ -71,11 +71,11 @@ queue_t *queue_init(int max_count) {
 
   q->first = NULL;
   q->last = NULL;
-  q->max_count = max_count;
+  q->maxCount = maxCount;
   q->count = 0;
 
-  q->add_attempts = q->get_attempts = 0;
-  q->add_count = q->get_count = 0;
+  q->addAttempts = q->getAttempts = 0;
+  q->addCount = q->getCount = 0;
 
   /*
   sem_init()  initializes  the unnamed semaphore at the address
@@ -102,7 +102,7 @@ queue_t *queue_init(int max_count) {
   // 0 - начальное значение ПУСТОГО семафора (тот, что забирает
   // значения из очереди
   if (errSemInit) {
-    printf("queue_init: sem_init() semEmpty failed: %s\n",
+    printf("queueInit: sem_init() semEmpty failed: %s\n",
            strerror(errSemInit));
     abort();
   }
@@ -111,14 +111,14 @@ queue_t *queue_init(int max_count) {
   // 1 - начальное значение ПОЛНОГО семафора (тот, что добавляет
   // значения в очередь
   if (errSemInit) {
-    printf("queue_init: sem_init() semFull failed: %s\n",
+    printf("queueInit: sem_init() semFull failed: %s\n",
            strerror(errSemInit));
     abort();
   }
 
   int errMutexInit = pthread_mutex_init(&q->mutex, NULL);
   if (errMutexInit) {
-    printf("queue_init: pthread_mutex_init() failed: %s\n",
+    printf("queueInit: pthread_mutex_init() failed: %s\n",
            strerror(errMutexInit));
     abort();
   }
@@ -127,9 +127,9 @@ queue_t *queue_init(int max_count) {
     we create a thread, save it's thread_id in queue
     and start qmonitor with arg q (which is our queue)
   */
-  int err = pthread_create(&q->qmonitor_tid, NULL, qmonitor, q);
+  int err = pthread_create(&q->qmonitorTid, NULL, qmonitor, q);
   if (err) {
-    printf("queue_init: pthread_create() failed: %s\n",
+    printf("queueInit: pthread_create() failed: %s\n",
            strerror(err));
     abort();
   }
@@ -137,25 +137,25 @@ queue_t *queue_init(int max_count) {
   return q; // return a ptr to queue
 }
 
-void queue_destroy(queue_t *q) {
-  int err = pthread_cancel(q->qmonitor_tid);
+void queueDestroy(queue_t *q) {
+  int err = pthread_cancel(q->qmonitorTid);
   if (err) {
-    printf("queue_destroy(): pthread_cancel() failed: %s\n",
+    printf("queueDestroy(): pthread_cancel() failed: %s\n",
            strerror(err));
   }
 
   err = sem_destroy(&q->semEmpty);
   if (err) {
-    printf("queue_destroy(): semEmpty failed: %s\n", strerror(err));
+    printf("queueDestroy(): semEmpty failed: %s\n", strerror(err));
   }
 
   err = sem_destroy(&q->semFull);
   if (err) {
-    printf("queue_destroy(): semFull failed: %s\n", strerror(err));
+    printf("queueDestroy(): semFull failed: %s\n", strerror(err));
   }
 
   if (pthread_mutex_destroy(&q->mutex)) {
-    printf("queue_destroy: pthread_mutex_destroy() error : %s\n",
+    printf("queueDestroy: pthread_mutex_destroy() error : %s\n",
            strerror(errno));
   }
 
@@ -169,7 +169,7 @@ void queue_destroy(queue_t *q) {
   free(q);
 }
 
-int queue_add(queue_t *q, int val) {
+int queueAdd(queue_t *q, int val) {
   /* semFull = 0: wait, block thread till > 0;
   semFull > 0: go and decrement it
   */
@@ -177,11 +177,11 @@ int queue_add(queue_t *q, int val) {
 
   execMutexlock(q);
 
-  q->add_attempts++; // +1 попытка записать элемент
+  q->addAttempts++; // +1 попытка записать элемент
 
-  assert(q->count <= q->max_count);
+  assert(q->count <= q->maxCount);
 
-  if (q->count == q->max_count) {
+  if (q->count == q->maxCount) {
     execMutexUnlock(q);
     execPostSem(&q->semEmpty);
     return 0;
@@ -204,7 +204,7 @@ int queue_add(queue_t *q, int val) {
   }
 
   q->count++; // количество элементов на текущий момент
-  q->add_count++; // сколько добавили элементов
+  q->addCount++; // сколько добавили элементов
 
   execMutexUnlock(q);
 
@@ -216,11 +216,11 @@ int queue_add(queue_t *q, int val) {
   return 1;
 }
 
-int queue_get(queue_t *q, int *val) {
+int queueGet(queue_t *q, int *val) {
   execWaitSem(&q->semEmpty);
   execMutexlock(q);
 
-  q->get_attempts++; // +1 попытка достать элемент
+  q->getAttempts++; // +1 попытка достать элемент
   assert(q->count >= 0);
 
   if (q->count == 0) {
@@ -236,7 +236,7 @@ int queue_get(queue_t *q, int *val) {
 
   free(tmp);      // delete the 1st node
   q->count--;     // amount of elems in queue
-  q->get_count++; // +1 successful попытка добавления элементов
+  q->getCount++; // +1 successful попытка добавления элементов
 
   execMutexUnlock(q);
 
@@ -248,18 +248,18 @@ int queue_get(queue_t *q, int *val) {
   return 1;
 }
 
-void queue_print_stats(queue_t *q) {
+void queuePrintStats(queue_t *q) {
   // here we print amount of attempts и how many of them are lucky
 
   const int count = q->count;
-  const long add_attempts = q->add_attempts;
-  const long get_attempts = q->get_attempts;
-  const long add_count = q->add_count;
-  const long get_count = q->get_count;
+  const long addAttempts = q->addAttempts;
+  const long getAttempts = q->getAttempts;
+  const long addCount = q->addCount;
+  const long getCount = q->getCount;
 
   printf("queue stats: current size %d; attempts: (%ld %ld %ld); "
          "counts (%ld %ld %ld)\n",
-         count, add_attempts, get_attempts,
-         add_attempts - get_attempts, add_count, get_count,
-         add_count - get_count);
+         count, addAttempts, getAttempts,
+         addAttempts - getAttempts, addCount, getCount,
+         addCount - getCount);
 }

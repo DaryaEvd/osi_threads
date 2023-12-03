@@ -24,7 +24,7 @@ void execMutexUnlock(queue_t *q) {
 }
 
 void execSignal(queue_t *q) {
-  if (pthread_cond_signal(&q->cond_var)) {
+  if (pthread_cond_signal(&q->condVar)) {
     printf("pthread_cond_signal() error: %s \n", strerror(errno));
     abort();
   }
@@ -48,12 +48,12 @@ void *qmonitor(void *arg) {
   printf("qmonitor: [%d %d %d]\n", getpid(), getppid(), gettid());
 
   while (1) {
-    queue_print_stats(q);
+    queuePrintStats(q);
     sleep(1);
   }
 }
 
-queue_t *queue_init(int max_count) {
+queue_t *queueInit(int maxCount) {
   queue_t *q = malloc(sizeof(queue_t)); // malloc mem for structure
   if (!q) {
     printf("Cannot allocate memory for a queue\n");
@@ -62,22 +62,22 @@ queue_t *queue_init(int max_count) {
 
   q->first = NULL;
   q->last = NULL;
-  q->max_count = max_count;
+  q->maxCount = maxCount;
   q->count = 0;
 
-  q->add_attempts = q->get_attempts = 0;
-  q->add_count = q->get_count = 0;
+  q->addAttempts = q->getAttempts = 0;
+  q->addCount = q->getCount = 0;
 
   int errMutexInit = pthread_mutex_init(&q->mutex, NULL);
   if (errMutexInit) {
-    printf("queue_init: pthread_mutex_init() failed: %s\n",
+    printf("queueInit: pthread_mutex_init() failed: %s\n",
            strerror(errMutexInit));
     abort();
   }
 
-  int errCondVarInit = pthread_cond_init(&q->cond_var, NULL);
+  int errCondVarInit = pthread_cond_init(&q->condVar, NULL);
   if (errCondVarInit) {
-    printf("queue_init: pthread_cond_init() failed: %s\n",
+    printf("queueInit: pthread_cond_init() failed: %s\n",
            strerror(errCondVarInit));
     abort();
   }
@@ -86,9 +86,9 @@ queue_t *queue_init(int max_count) {
     we create a thread, save it's thread_id in queue
     and start qmonitor with arg q (which is our queue)
   */
-  int err = pthread_create(&q->qmonitor_tid, NULL, qmonitor, q);
+  int err = pthread_create(&q->qmonitorTid, NULL, qmonitor, q);
   if (err) {
-    printf("queue_init: pthread_create() failed: %s\n",
+    printf("queueInit: pthread_create() failed: %s\n",
            strerror(err));
     abort();
   }
@@ -96,20 +96,20 @@ queue_t *queue_init(int max_count) {
   return q; // return a ptr to queue
 }
 
-void queue_destroy(queue_t *q) {
-  int err = pthread_cancel(q->qmonitor_tid);
+void queueDestroy(queue_t *q) {
+  int err = pthread_cancel(q->qmonitorTid);
   if (err) {
-    printf("queue_destroy(): pthread_cancel() failed: %s\n",
+    printf("queueDestroy(): pthread_cancel() failed: %s\n",
            strerror(err));
   }
 
   if (pthread_mutex_destroy(&q->mutex)) {
-    printf("queue_destroy: pthread_mutex_destroy() error: %s\n",
+    printf("queueDestroy: pthread_mutex_destroy() error: %s\n",
            strerror(errno));
   }
 
-  if (pthread_cond_destroy(&q->cond_var)) {
-    printf("queue_destroy: pthread_cond_destroy() error: %s\n",
+  if (pthread_cond_destroy(&q->condVar)) {
+    printf("queueDestroy: pthread_cond_destroy() error: %s\n",
            strerror(errno));
   }
 
@@ -122,26 +122,26 @@ void queue_destroy(queue_t *q) {
   free(q);
 }
 
-int queue_add(queue_t *q, int val) {
+int queueAdd(queue_t *q, int val) {
   execMutexlock(q);
 
   // if queue is full
-  while (q->count == q->max_count ||
+  while (q->count == q->maxCount ||
          q->flagCanShareData == PROHIBIT_SHARE) {
-    if (pthread_cond_wait(&q->cond_var,
+    if (pthread_cond_wait(&q->condVar,
                           &q->mutex)) { // ждём пока не поступит
                                         // сигнала о том, что можем
       // добавлять в очередь элемент
-      printf("queue_add() error in pthread_cond_wait(): %s\n",
+      printf("queueAdd() error in pthread_cond_wait(): %s\n",
              strerror(errno));
       abort();
     }
   }
   // получили сигнал о том, что можем добавлять
 
-  q->add_attempts++; // +1 попытка записать элемент
+  q->addAttempts++; // +1 попытка записать элемент
 
-  assert(q->count <= q->max_count);
+  assert(q->count <= q->maxCount);
 
   qnode_t *new = malloc(sizeof(qnode_t)); // malloc mem for one node
   if (!new) {
@@ -160,7 +160,7 @@ int queue_add(queue_t *q, int val) {
   }
 
   q->count++; // количество элементов на текущий момент
-  q->add_count++; // сколько добавили элементов
+  q->addCount++; // сколько добавили элементов
 
   q->flagCanShareData = PROHIBIT_SHARE;
 
@@ -169,19 +169,19 @@ int queue_add(queue_t *q, int val) {
   return 1;
 }
 
-int queue_get(queue_t *q, int *val) {
+int queueGet(queue_t *q, int *val) {
   execMutexlock(q);
 
-  q->get_attempts++; // +1 попытка достать элемент
+  q->getAttempts++; // +1 попытка достать элемент
   assert(q->count >= 0);
 
   // пока пусто
   while (!(q->count > 0) || q->flagCanShareData == ALLOW_SHARE) {
     if (pthread_cond_wait(
-            &q->cond_var,
+            &q->condVar,
             &q->mutex)) { // ждём, пока кто-то не просигналит
                           // о том, что чот добавили
-      printf("queue_get() error in pthread_cond_wait: %s\n",
+      printf("queueGet() error in pthread_cond_wait: %s\n",
              strerror(errno));
       abort();
     }
@@ -198,7 +198,7 @@ int queue_get(queue_t *q, int *val) {
 
   free(tmp);      // delete the 1st node
   q->count--;     // amount of elems in queue
-  q->get_count++; // +1 successful попытка добавления элементов
+  q->getCount++; // +1 successful попытка добавления элементов
 
   q->flagCanShareData = ALLOW_SHARE;
 
@@ -208,21 +208,21 @@ int queue_get(queue_t *q, int *val) {
   return 1;
 }
 
-void queue_print_stats(queue_t *q) {
+void queuePrintStats(queue_t *q) {
   // here we print amount of attempts и how many of them are lucky
   execMutexlock(q);
 
   const int count = q->count;
-  const long add_attempts = q->add_attempts;
-  const long get_attempts = q->get_attempts;
-  const long add_count = q->add_count;
-  const long get_count = q->get_count;
+  const long addAttempts = q->addAttempts;
+  const long getAttempts = q->getAttempts;
+  const long addCount = q->addCount;
+  const long getCount = q->getCount;
 
   execMutexUnlock(q);
 
   printf("queue stats: current size %d; attempts: (%ld %ld %ld); "
          "counts (%ld %ld %ld)\n",
-         count, add_attempts, get_attempts,
-         add_attempts - get_attempts, add_count, get_count,
-         add_count - get_count);
+         count, addAttempts, getAttempts,
+         addAttempts - getAttempts, addCount, getCount,
+         addCount - getCount);
 }

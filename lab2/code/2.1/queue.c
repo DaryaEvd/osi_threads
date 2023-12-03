@@ -10,14 +10,14 @@ void *qmonitor(void *arg) {
   printf("qmonitor: [%d %d %d]\n", getpid(), getppid(), gettid());
 
   while (1) {
-    queue_print_stats(q);
+    queuePrintStats(q);
     sleep(1);
   }
 
   return NULL;
 }
 
-queue_t *queue_init(int max_count) {
+queue_t *queueInit(int maxCount) {
   queue_t *q = malloc(sizeof(queue_t)); // malloc mem for structure
   if (!q) {
     printf("Cannot allocate memory for a queue\n");
@@ -26,19 +26,19 @@ queue_t *queue_init(int max_count) {
 
   q->first = NULL;
   q->last = NULL;
-  q->max_count = max_count;
+  q->maxCount = maxCount;
   q->count = 0;
 
-  q->add_attempts = q->get_attempts = 0;
-  q->add_count = q->get_count = 0;
+  q->addAttempts = q->getAttempts = 0;
+  q->addCount = q->getCount = 0;
 
   /*
   we create a thread, save it's thread_id in queue
   and start qmonitor with arg q (which is our queue)
   */
-  int err = pthread_create(&q->qmonitor_tid, NULL, qmonitor, q);
+  int err = pthread_create(&q->qmonitorTid, NULL, qmonitor, q);
   if (err) {
-    printf("queue_init: pthread_create() failed: %s\n",
+    printf("queueInit: pthread_create() failed: %s\n",
            strerror(err));
     abort();
   }
@@ -46,8 +46,8 @@ queue_t *queue_init(int max_count) {
   return q; // return a ptr to queue
 }
 
-void queue_destroy(queue_t *q) {
-  const int errCancel = pthread_cancel(q->qmonitor_tid);
+void queueDestroy(queue_t *q) {
+  const int errCancel = pthread_cancel(q->qmonitorTid);
   if (errCancel) {
     printf("pthread_cancel() error");
   }
@@ -61,12 +61,12 @@ void queue_destroy(queue_t *q) {
   free(q);
 }
 
-int queue_add(queue_t *q, int val) {
-  q->add_attempts++; // +1 попытка записать элемент
+int queueAdd(queue_t *q, int val) {
+  q->addAttempts++; // +1 попытка записать элемент
 
-  assert(q->count <= q->max_count);
+  assert(q->count <= q->maxCount);
 
-  if (q->count == q->max_count) {
+  if (q->count == q->maxCount) {
     return 0;
   }
 
@@ -87,13 +87,13 @@ int queue_add(queue_t *q, int val) {
   }
 
   q->count++; // количество элементов на текущий момент
-  q->add_count++; // сколько добавили элементов
+  q->addCount++; // сколько добавили элементов
 
   return 1;
 }
 
-int queue_get(queue_t *q, int *val) {
-  q->get_attempts++; // +1 попытка достать элемент
+int queueGet(queue_t *q, int *val) {
+  q->getAttempts++; // +1 попытка достать элемент
 
   assert(q->count >= 0);
 
@@ -108,22 +108,22 @@ int queue_get(queue_t *q, int *val) {
 
   free(tmp);      // delete the 1st node
   q->count--;     // amount of elems in queue
-  q->get_count++; // +1 successful попытка добавления элементов
+  q->getCount++; // +1 successful попытка добавления элементов
 
   return 1;
 }
 
-void queue_print_stats(queue_t *q) {
+void queuePrintStats(queue_t *q) {
   /*
   here we print amount of попыток и how many of them are удачные
   */
   printf("\n");
   printf("queue stats: current size %d;\n", q->count);
-  printf("attempts: (add_attempts: %ld; get_attempts: %ld; "
-         "add_attempts - get_attempts: %ld)\n",
-         q->add_attempts, q->get_attempts,
-         q->add_attempts - q->get_attempts);
-  printf("counts: (add_count: %ld; get_count: %ld; add_count - "
-         "get_count: %ld)\n",
-         q->add_count, q->get_count, q->add_count - q->get_count);
+  printf("attempts: (addAttempts: %ld; getAttempts: %ld; "
+         "addAttempts - getAttempts: %ld)\n",
+         q->addAttempts, q->getAttempts,
+         q->addAttempts - q->getAttempts);
+  printf("counts: (addCount: %ld; getCount: %ld; addCount - "
+         "getCount: %ld)\n",
+         q->addCount, q->getCount, q->addCount - q->getCount);
 }
