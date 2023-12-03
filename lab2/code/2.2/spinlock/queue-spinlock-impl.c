@@ -91,10 +91,10 @@ void queueDestroy(queueT *q) {
            strerror(errno));
   }
 
-  qnodeT *curr_node = q->first;
-  while (curr_node != NULL) {
-    qnodeT *tmp = curr_node;
-    curr_node = curr_node->next;
+  qnodeT *currNode = q->first;
+  while (currNode != NULL) {
+    qnodeT *tmp = currNode;
+    currNode = currNode->next;
     free(tmp);
   }
   free(q);

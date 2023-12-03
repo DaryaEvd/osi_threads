@@ -9,6 +9,7 @@
 void execMutexlock(queueT *q) {
   if (pthread_mutex_lock(&q->mutex)) {
     printf("pthread_mutex_lock() error: %s \n", strerror(errno));
+    queueDestroy(q);
     abort();
   }
 }
@@ -16,6 +17,7 @@ void execMutexlock(queueT *q) {
 void execMutexUnlock(queueT *q) {
   if (pthread_mutex_unlock(&q->mutex)) {
     printf("pthread_mutex_unlock() error: %s \n", strerror(errno));
+    queueDestroy(q);
     abort();
   }
 }
@@ -92,6 +94,7 @@ queueT *queueInit(int maxCount) {
   if (errSemInit) {
     printf("queueInit: sem_init() semEmpty failed: %s\n",
            strerror(errSemInit));
+    free(q);
     abort();
   }
 
@@ -101,6 +104,7 @@ queueT *queueInit(int maxCount) {
   if (errSemInit) {
     printf("queueInit: sem_init() semFull failed: %s\n",
            strerror(errSemInit));
+    free(q);
     abort();
   }
 
@@ -108,6 +112,7 @@ queueT *queueInit(int maxCount) {
   if (errMutexInit) {
     printf("queueInit: pthread_mutex_init() failed: %s\n",
            strerror(errMutexInit));
+    free(q);
     abort();
   }
 
@@ -117,8 +122,8 @@ queueT *queueInit(int maxCount) {
   */
   int err = pthread_create(&q->qmonitorTid, NULL, qmonitor, q);
   if (err) {
-    printf("queueInit: pthread_create() failed: %s\n",
-           strerror(err));
+    printf("queueInit: pthread_create() failed: %s\n", strerror(err));
+    free(q);
     abort();
   }
 
@@ -172,12 +177,14 @@ int queueAdd(queueT *q, int val) {
   if (q->count == q->maxCount) {
     execMutexUnlock(q);
     execPostSem(&q->semEmpty);
+    queueDestroy(q);
     return 0;
   }
 
   qnodeT *new = malloc(sizeof(qnodeT)); // malloc mem for one node
   if (!new) {
     printf("Cannot allocate memory for new node\n");
+    queueDestroy(q);
     abort();
   }
 
@@ -214,6 +221,7 @@ int queueGet(queueT *q, int *val) {
   if (q->count == 0) {
     execMutexUnlock(q);
     execPostSem(&q->semFull);
+    queueDestroy(q);
     return 0;
   }
 
@@ -222,8 +230,8 @@ int queueGet(queueT *q, int *val) {
   *val = tmp->val;           // take val of the 1st node
   q->first = q->first->next; // now next node is the 1st
 
-  free(tmp);      // delete the 1st node
-  q->count--;     // amount of elems in queue
+  free(tmp);     // delete the 1st node
+  q->count--;    // amount of elems in queue
   q->getCount++; // +1 successful попытка добавления элементов
 
   execMutexUnlock(q);
@@ -247,7 +255,6 @@ void queuePrintStats(queueT *q) {
 
   printf("queue stats: current size %d; attempts: (%ld %ld %ld); "
          "counts (%ld %ld %ld)\n",
-         count, addAttempts, getAttempts,
-         addAttempts - getAttempts, addCount, getCount,
-         addCount - getCount);
+         count, addAttempts, getAttempts, addAttempts - getAttempts,
+         addCount, getCount, addCount - getCount);
 }

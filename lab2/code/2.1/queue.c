@@ -38,8 +38,8 @@ queueT *queueInit(int maxCount) {
   */
   int err = pthread_create(&q->qmonitorTid, NULL, qmonitor, q);
   if (err) {
-    printf("queueInit: pthread_create() failed: %s\n",
-           strerror(err));
+    printf("queueInit: pthread_create() failed: %s\n", strerror(err));
+    free(q);
     abort();
   }
 
@@ -49,13 +49,13 @@ queueT *queueInit(int maxCount) {
 void queueDestroy(queueT *q) {
   const int errCancel = pthread_cancel(q->qmonitorTid);
   if (errCancel) {
-    printf("pthread_cancel() error");
+    printf("pthread_cancel() error %s", strerror(errno));
   }
 
-  qnodeT *curr_node = q->first;
-  while (curr_node != NULL) {
-    qnodeT *tmp = curr_node;
-    curr_node = curr_node->next;
+  qnodeT *currNode = q->first;
+  while (currNode != NULL) {
+    qnodeT *tmp = currNode;
+    currNode = currNode->next;
     free(tmp);
   }
   free(q);
@@ -73,6 +73,7 @@ int queueAdd(queueT *q, int val) {
   qnodeT *new = malloc(sizeof(qnodeT)); // malloc mem for one node
   if (!new) {
     printf("Cannot allocate memory for new node\n");
+    queueDestroy(q);
     abort();
   }
 
@@ -106,8 +107,8 @@ int queueGet(queueT *q, int *val) {
   *val = tmp->val;           // take val of the 1st node
   q->first = q->first->next; // now next node is the 1st
 
-  free(tmp);      // delete the 1st node
-  q->count--;     // amount of elems in queue
+  free(tmp);     // delete the 1st node
+  q->count--;    // amount of elems in queue
   q->getCount++; // +1 successful попытка добавления элементов
 
   return 1;
