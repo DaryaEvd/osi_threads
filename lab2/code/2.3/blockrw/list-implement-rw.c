@@ -1,4 +1,4 @@
-#include "list-mutex.h"
+#include "list-rw.h"
 #include "stuff.h"
 
 #include <errno.h>
@@ -18,25 +18,9 @@ Storage *createStorage(int capacity) {
 }
 
 void initRWlock(Storage *storage, Node *node) {
-  int errMutexAttrInit = pthread_mutexattr_init(&node->mutexAttr);
-  if (errMutexAttrInit) {
-    printf("mutex attributes init err: %s", strerror(errno));
-    destroyStorage(storage);
-    abort();
-  }
-
-  int errSetType = pthread_mutexattr_settype(
-      &node->mutexAttr, PTHREAD_MUTEX_ERRORCHECK);
-  if (errSetType) {
-    printf("mutex set type err: %s", strerror(errno));
-    destroyStorage(storage);
-    abort();
-  }
-
-  int errMutexInit =
-      pthread_mutex_init(&node->sync, &node->mutexAttr);
-  if (errMutexInit) {
-    printf("mutex init err: %s", strerror(errno));
+  int errRWlockInit = pthread_rwlock_init(&node->sync, NULL);
+  if(errRWlockInit) {
+    printf("rwlock init err: %s", strerror(errno));
     destroyStorage(storage);
     abort();
   }
@@ -78,8 +62,7 @@ void destroyStorage(Storage *storage) {
   Node *currentNode = storage->first;
   while (currentNode != NULL) {
     Node *nextNode = currentNode->next;
-    pthread_mutexattr_destroy(&currentNode->mutexAttr);
-    pthread_mutex_destroy(&currentNode->sync);
+    pthread_rwlock_destroy(&currentNode->sync);
     free(currentNode);
     currentNode = nextNode;
   }

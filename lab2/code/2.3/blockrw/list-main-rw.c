@@ -1,4 +1,4 @@
-#include "list-mutex.h"
+#include "list-rw.h"
 #include "stuff.h"
 
 #include <errno.h>
@@ -20,22 +20,6 @@ int DECREASING_LENGTH_COUNT = 0;
 int EQUAL_LENGTH_COUNT = 0;
 int SWAP_PERMUTATIONS_COUNT = 0;
 
-void execMutexlock(pthread_mutex_t *mutex, Storage *storage) {
-  if (pthread_mutex_lock(mutex)) {
-    printf("pthread_mutex_lock() error: %s \n", strerror(errno));
-    destroyStorage(storage);
-    abort();
-  }
-}
-
-void execMutexUnlock(pthread_mutex_t *mutex, Storage *storage) {
-  if (pthread_mutex_unlock(mutex)) {
-    printf("pthread_mutex_unlock() error: %s \n", strerror(errno));
-    destroyStorage(storage);
-    abort();
-  }
-}
-
 void *countIncreasingLengthPairs(void *data) {
   Storage *storage = (Storage *)data;
 
@@ -49,9 +33,9 @@ void *countIncreasingLengthPairs(void *data) {
     Node *tmp;
     while (1) {
       if (curr != NULL) {
-        execMutexlock(&curr->sync, storage);
+        pthread_rwlock_rdlock(&curr->sync);
         if (curr->next != NULL) {
-          execMutexlock(&curr->next->sync, storage);
+          pthread_rwlock_rdlock(&curr->next->sync);
           volatile int amountPairIncrease = 0;
           curr2 = curr->next;
           if (strlen(curr->value) < strlen(curr2->value)) {
@@ -60,14 +44,14 @@ void *countIncreasingLengthPairs(void *data) {
           tmp = curr;
           curr = curr->next;
 
-          execMutexUnlock(&tmp->sync, storage);
-          execMutexUnlock(&curr->sync, storage);
+          pthread_rwlock_unlock(&tmp->sync);
+          pthread_rwlock_unlock(&curr->sync);
 
         } else {
           tmp = curr;
           curr = curr->next;
 
-          execMutexUnlock(&tmp->sync, storage);
+          pthread_rwlock_unlock(&tmp->sync);
         }
       } else if (curr == NULL) {
         break;
@@ -92,10 +76,10 @@ void *countDecreasingLengthPairs(void *data) {
     Node *tmp;
     while (1) {
       if (curr != NULL) {
-        execMutexlock(&curr->sync, storage);
+        pthread_rwlock_rdlock(&curr->sync);
 
         if (curr->next != NULL) {
-          execMutexlock(&curr->next->sync, storage);
+          pthread_rwlock_rdlock(&curr->next->sync);
           volatile int amountPairDecrease = 0;
           curr2 = curr->next;
           if (strlen(curr->value) == strlen(curr2->value)) {
@@ -104,13 +88,13 @@ void *countDecreasingLengthPairs(void *data) {
           tmp = curr;
           curr = curr->next;
 
-          execMutexUnlock(&tmp->sync, storage);
-          execMutexUnlock(&curr->sync, storage);
+          pthread_rwlock_unlock(&tmp->sync);
+          pthread_rwlock_unlock(&curr->sync);
         } else {
           tmp = curr;
           curr = curr->next;
 
-          execMutexUnlock(&tmp->sync, storage);
+          pthread_rwlock_unlock(&tmp->sync);
         }
       } else if (curr == NULL) {
         break;
@@ -136,9 +120,9 @@ void *countEqualLengthPaits(void *data) {
     Node *tmp;
     while (1) {
       if (curr != NULL) {
-        execMutexlock(&curr->sync, storage);
+        pthread_rwlock_rdlock(&curr->sync);
         if (curr->next != NULL) {
-          execMutexlock(&curr->next->sync, storage);
+          pthread_rwlock_rdlock(&curr->next->sync);
           volatile int amountPairEqual = 0;
           curr2 = curr->next;
           if (strlen(curr->value) > strlen(curr2->value)) {
@@ -147,13 +131,13 @@ void *countEqualLengthPaits(void *data) {
           tmp = curr;
           curr = curr->next;
 
-          execMutexUnlock(&tmp->sync, storage);
-          execMutexUnlock(&curr->sync, storage);
+          pthread_rwlock_unlock(&tmp->sync);
+          pthread_rwlock_unlock(&curr->sync);
         } else {
           tmp = curr;
           curr = curr->next;
 
-          execMutexUnlock(&tmp->sync, storage);
+          pthread_rwlock_unlock(&tmp->sync);
         }
       } else if (curr == NULL) {
         break;
@@ -184,12 +168,12 @@ void *countSwapPermutations(void *data) {
     Node *tmp;
     while (1) {
       if (curr1 != NULL) {
-        execMutexlock(&curr1->sync, storage);
+        pthread_rwlock_wrlock(&curr1->sync);
 
         if (curr1->next != NULL) {
-          execMutexlock(&curr1->next->sync, storage);
+          pthread_rwlock_wrlock(&curr1->next->sync);
           if (curr1->next->next != NULL) {
-            execMutexlock(&curr1->next->next->sync, storage);
+            pthread_rwlock_wrlock(&curr1->next->next->sync);
             curr2 = curr1->next;
             curr3 = curr1->next->next;
             if (rand() % COEFF_OF_SWAPPING == 0) {
@@ -202,22 +186,22 @@ void *countSwapPermutations(void *data) {
             curr1 = tmp->next;
             curr2 = curr1->next;
 
-            execMutexUnlock(&tmp->sync, storage);
-            execMutexUnlock(&curr1->sync, storage);
-            execMutexUnlock(&curr2->sync, storage);
+            pthread_rwlock_unlock(&tmp->sync);
+            pthread_rwlock_unlock(&curr1->sync);
+            pthread_rwlock_unlock(&curr2->sync);
 
           } else {
             tmp = curr1;
             curr1 = curr1->next;
 
-            execMutexUnlock(&tmp->sync, storage);
-            execMutexUnlock(&curr1->sync, storage);
+            pthread_rwlock_unlock(&tmp->sync);
+            pthread_rwlock_unlock(&curr1->sync);
           }
         } else {
           tmp = curr1;
           curr1 = curr1->next;
 
-          execMutexUnlock(&tmp->sync, storage);
+          pthread_rwlock_unlock(&tmp->sync);
         }
       } else if (curr1 == NULL) {
         break;

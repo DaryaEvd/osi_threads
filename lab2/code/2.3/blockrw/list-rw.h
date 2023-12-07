@@ -10,8 +10,7 @@ typedef struct _Node {
   char value[MAX_STRING_LENGTH];
   struct _Node *next;
 
-  pthread_mutex_t sync;
-  pthread_mutexattr_t mutexAttr;
+  pthread_rwlock_t sync;
 } Node;
 
 typedef struct _Storage {
