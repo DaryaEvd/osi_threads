@@ -20,6 +20,30 @@ int DECREASING_LENGTH_COUNT = 0;
 int EQUAL_LENGTH_COUNT = 0;
 int SWAP_PERMUTATIONS_COUNT = 0;
 
+void execRWlockUnlock(pthread_rwlock_t *rwlock, Storage *storage) {
+  if (pthread_rwlock_unlock(rwlock)) {
+    printf("pthread_rwlock_unlock err: %s\n", strerror(errno));
+    destroyStorage(storage);
+    abort();
+  }
+}
+
+void execRWlockWRlock(pthread_rwlock_t *rwlock, Storage *storage) {
+  if (pthread_rwlock_wrlock(rwlock)) {
+    printf("pthread_rwlock_wrlock err: %s\n", strerror(errno));
+    destroyStorage(storage);
+    abort();
+  }
+}
+
+void execRWlockRDlock(pthread_rwlock_t *rwlock, Storage *storage) {
+  if(pthread_rwlock_rdlock(rwlock)) {
+    printf("pthread_rwlock_rdlock err: %s\n", strerror(errno));
+    destroyStorage(storage);
+    abort();
+  }
+}
+
 void *countIncreasingLengthPairs(void *data) {
   Storage *storage = (Storage *)data;
 
@@ -33,9 +57,9 @@ void *countIncreasingLengthPairs(void *data) {
     Node *tmp;
     while (1) {
       if (curr != NULL) {
-        pthread_rwlock_rdlock(&curr->sync);
+        execRWlockRDlock(&curr->sync, storage);
         if (curr->next != NULL) {
-          pthread_rwlock_rdlock(&curr->next->sync);
+          execRWlockRDlock(&curr->next->sync, storage);
           volatile int amountPairIncrease = 0;
           curr2 = curr->next;
           if (strlen(curr->value) < strlen(curr2->value)) {
@@ -44,14 +68,14 @@ void *countIncreasingLengthPairs(void *data) {
           tmp = curr;
           curr = curr->next;
 
-          pthread_rwlock_unlock(&tmp->sync);
-          pthread_rwlock_unlock(&curr->sync);
+          execRWlockUnlock(&tmp->sync, storage);
+          execRWlockUnlock(&curr->sync, storage);
 
         } else {
           tmp = curr;
           curr = curr->next;
 
-          pthread_rwlock_unlock(&tmp->sync);
+          execRWlockUnlock(&tmp->sync, storage);
         }
       } else if (curr == NULL) {
         break;
@@ -76,10 +100,10 @@ void *countDecreasingLengthPairs(void *data) {
     Node *tmp;
     while (1) {
       if (curr != NULL) {
-        pthread_rwlock_rdlock(&curr->sync);
+        execRWlockRDlock(&curr->sync, storage);
 
         if (curr->next != NULL) {
-          pthread_rwlock_rdlock(&curr->next->sync);
+          execRWlockRDlock(&curr->next->sync, storage);
           volatile int amountPairDecrease = 0;
           curr2 = curr->next;
           if (strlen(curr->value) == strlen(curr2->value)) {
@@ -88,13 +112,13 @@ void *countDecreasingLengthPairs(void *data) {
           tmp = curr;
           curr = curr->next;
 
-          pthread_rwlock_unlock(&tmp->sync);
-          pthread_rwlock_unlock(&curr->sync);
+          execRWlockUnlock(&tmp->sync, storage);
+          execRWlockUnlock(&curr->sync, storage);
         } else {
           tmp = curr;
           curr = curr->next;
 
-          pthread_rwlock_unlock(&tmp->sync);
+          execRWlockUnlock(&tmp->sync, storage);
         }
       } else if (curr == NULL) {
         break;
@@ -120,9 +144,9 @@ void *countEqualLengthPaits(void *data) {
     Node *tmp;
     while (1) {
       if (curr != NULL) {
-        pthread_rwlock_rdlock(&curr->sync);
+        execRWlockRDlock(&curr->sync, storage);
         if (curr->next != NULL) {
-          pthread_rwlock_rdlock(&curr->next->sync);
+          execRWlockRDlock(&curr->next->sync, storage);
           volatile int amountPairEqual = 0;
           curr2 = curr->next;
           if (strlen(curr->value) > strlen(curr2->value)) {
@@ -131,13 +155,13 @@ void *countEqualLengthPaits(void *data) {
           tmp = curr;
           curr = curr->next;
 
-          pthread_rwlock_unlock(&tmp->sync);
-          pthread_rwlock_unlock(&curr->sync);
+          execRWlockUnlock(&tmp->sync, storage);
+          execRWlockUnlock(&curr->sync, storage);
         } else {
           tmp = curr;
           curr = curr->next;
 
-          pthread_rwlock_unlock(&tmp->sync);
+          execRWlockUnlock(&tmp->sync, storage);
         }
       } else if (curr == NULL) {
         break;
@@ -168,12 +192,12 @@ void *countSwapPermutations(void *data) {
     Node *tmp;
     while (1) {
       if (curr1 != NULL) {
-        pthread_rwlock_wrlock(&curr1->sync);
+        execRWlockWRlock(&curr1->sync, storage);
 
         if (curr1->next != NULL) {
-          pthread_rwlock_wrlock(&curr1->next->sync);
+          execRWlockWRlock(&curr1->next->sync, storage);
           if (curr1->next->next != NULL) {
-            pthread_rwlock_wrlock(&curr1->next->next->sync);
+            execRWlockWRlock(&curr1->next->next->sync, storage);
             curr2 = curr1->next;
             curr3 = curr1->next->next;
             if (rand() % COEFF_OF_SWAPPING == 0) {
@@ -186,22 +210,22 @@ void *countSwapPermutations(void *data) {
             curr1 = tmp->next;
             curr2 = curr1->next;
 
-            pthread_rwlock_unlock(&tmp->sync);
-            pthread_rwlock_unlock(&curr1->sync);
-            pthread_rwlock_unlock(&curr2->sync);
+            execRWlockUnlock(&tmp->sync, storage);
+            execRWlockUnlock(&curr1->sync, storage);
+            execRWlockUnlock(&curr2->sync, storage);
 
           } else {
             tmp = curr1;
             curr1 = curr1->next;
 
-            pthread_rwlock_unlock(&tmp->sync);
-            pthread_rwlock_unlock(&curr1->sync);
+            execRWlockUnlock(&tmp->sync, storage);
+            execRWlockUnlock(&curr1->sync, storage);
           }
         } else {
           tmp = curr1;
           curr1 = curr1->next;
 
-          pthread_rwlock_unlock(&tmp->sync);
+          execRWlockUnlock(&tmp->sync, storage);
         }
       } else if (curr1 == NULL) {
         break;
