@@ -1,5 +1,8 @@
 # Блок задач на синхронизацию  
 
+## Видосики хорошие   
+- [Разные примитивы синхронизации](https://www.youtube.com/watch?v=50ZBUNyLsBs)  
+
 ### Для 2.1  
 
 #### Пункт a
@@ -16,7 +19,7 @@ Segmentation fault (core dumped)`
 #### А почему получаем такие ошибки?  
 Потому что много мест в коде, где есть атомарные операции.
 Например, операция увеличения счётчика - не атомарна! 
-В коде таких операций много: `q->add_attempts++`, `q->count++`, `q->add_count++` и т.д. 
+В коде таких операций много: `q->addAttempts++`, `q->count++`, `q->addCount++` и т.д. 
 То есть, условно, `counter++` превращается в 3 операции:  
 ```
 movl    $0, -4(%rbp)
@@ -46,12 +49,12 @@ movl    -4(%rbp), %eax
 Получим что-то в таком духе:  
 ```
 Program terminated with signal SIGSEGV, Segmentation fault.
-#0  0x00005605e73446a1 in queue_get (q=0x5605e81196b0, 
+#0  0x00005605e73446a1 in queueGet (q=0x5605e81196b0, 
     val=0x7eff212f2ec4) at queue.c:102
 102       *val = tmp->val;           // take val of the 1st node
 [Current thread is 1 (Thread 0x7eff212f3700 (LWP 45699))]
 (gdb) where
-#0  0x00005605e73446a1 in queue_get (q=0x5605e81196b0, 
+#0  0x00005605e73446a1 in queueGet (q=0x5605e81196b0, 
     val=0x7eff212f2ec4) at queue.c:102
 #1  0x00005605e7344949 in reader (arg=0x5605e81196b0)
     at queue-threads.c:45
@@ -64,14 +67,14 @@ Program terminated with signal SIGSEGV, Segmentation fault.
 Пишем дальше:  
 `p tmp`  
 Получаем вот что:  
-`$1 = (qnode_t *) 0x0`  
+`$1 = (qnodeT *) 0x0`  
 То есть мы пытались разыменовать нулевой указатель.  
 Можем еще посмотреть соседние потоки. Пишем:  
 `info thread`  
 Получаем:  
 ```
   Id   Target Id                                   Frame 
-* 1    Thread 0x7eff212f3700 (LWP 45699)           0x00005605e73446a1 in queue_get (q=0x5605e81196b0, val=0x7eff212f2ec4) at queue.c:102
+* 1    Thread 0x7eff212f3700 (LWP 45699)           0x00005605e73446a1 in queueGet (q=0x5605e81196b0, val=0x7eff212f2ec4) at queue.c:102
   2    Thread 0x7eff20af2700 (LWP 45700)           0x00007eff21b92190 in checked_request2size (sz=<optimized out>, req=<optimized out>)
     at malloc.c:3059
   3    Thread 0x7eff21af4700 (LWP 45698)           0x00007eff21bd523f in __GI___clock_nanosleep (clock_id=clock_id@entry=0, 
@@ -81,7 +84,7 @@ Program terminated with signal SIGSEGV, Segmentation fault.
   4    Thread 0x7eff21af5740 (LWP 45697) (Exiting) warning: Couldn't find general-purpose registers in core file.
 <unavailable> in ?? ()
 ```  
-Наш поток упал в `queue_get`, а соседний(thread 2) - был в `checked_request2size` (не оч пон чо ито)  
+Наш поток упал в `queueGet`, а соседний(thread 2) - был в `checked_request2size` (не оч пон чо ито)  
 Можем написать для более подробной инфы:  
 `thread 2`  
 `where`  
@@ -331,7 +334,7 @@ Here, you will learn about the various key differences between Spinlock and Mute
 В данном примере событие заключается в том, что "я уже напечатал, освободил ресурс, теперь печатай ты, буду ждать события от тебя".   
 
 `Cond var` - это объект, на который   
-- можно сделать операцию `wait` и передать туда `cond_var`;  
+- можно сделать операцию `wait` и передать туда `condVar`;  
 - просигналить: `signal(condvar)` or `broadcast`;  
 
 Нам нужен какой-то флаг, который равен 1, если печатает 1й поток, и 2, если печатает 2й поток.   
@@ -342,8 +345,8 @@ Here, you will learn about the various key differences between Spinlock and Mute
 
 ![08_pic](stuff/08.png)  
 // TODO: поменять фотку))
-Синий блок позволяет заблокироваться до возникновения события. А событие определяет у нас не cond_var, а флаг.  
-`cond_var` - это способ просигналить, уведомить о том, что какое-то событие произошло. А какое событие произошло - определено вот в этом флаге.   
+Синий блок позволяет заблокироваться до возникновения события. А событие определяет у нас не condVar, а флаг.  
+`condVar` - это способ просигналить, уведомить о том, что какое-то событие произошло. А какое событие произошло - определено вот в этом флаге.   
 Потом вы в `while` проверяем, что флаг стал в том состояниии, в котором мы его ожидаем. И выходим из цикла. Потом делаем `printf`, выставляем событие (т.е. пишем flag = 2) и генерим `signal` о том, что событие произошло.   
 
 Как будто всё гуд. Но! Проблема в том, что переменная `flag` - это разделяемый ресурс. И просто так менять его в духе `flag = 2`, `flag = 1` не хорошо.  
@@ -355,13 +358,13 @@ Here, you will learn about the various key differences between Spinlock and Mute
 ВОПРОС! Если в первом потоке мы захватили `mutex`, то каким образом во втором мы его захватим? Оч просто: в `wait` передаем этот `mutex`, который она разлочит.  
 ![09_pic](stuff/09.png)    
 
-То есть мы залочили `mutex`, начинаем проверять `flag`(мы имеем право проверять, мы в залоченном `mutex-e`, всё норм), и `flag` не наш. Тогда мы уходим в `wait`, говорим, что будем ждать на `cond_var-e`.   
+То есть мы залочили `mutex`, начинаем проверять `flag`(мы имеем право проверять, мы в залоченном `mutex-e`, всё норм), и `flag` не наш. Тогда мы уходим в `wait`, говорим, что будем ждать на `condVar-e`.   
 Но! Если мы хотим, чтоб этот `flag` поменялся, нам надо разлочить `mutex`. И функция `wait` принимает 2 аргумента: условную переменную и мутекс.   
-Поэтому перед тем как устроить ожидание на `cond_var-e`, она разлочивает `mutex`. А после того, как кто-то просигналил, `wait` захватывает `mutex` снова.   
+Поэтому перед тем как устроить ожидание на `condVar-e`, она разлочивает `mutex`. А после того, как кто-то просигналил, `wait` захватывает `mutex` снова.   
 Типа `wait` внутри выглядит как `unlock_mutex`, `wait`, `lock_mutex`.  
 `mutex` защищает предикат, по которому мы определяем, что должно происходить: можем мы работать или нет.   
 
-**!!! Важно !!!** `cond_var` используется в связке с `mutex`  
+**!!! Важно !!!** `condVar` используется в связке с `mutex`  
 
 **Почитать можно вот**  
 - [С оракла](https://docs.oracle.com/cd/E19455-01/806-5257/6je9h032r/index.html)
@@ -379,6 +382,21 @@ Here, you will learn about the various key differences between Spinlock and Mute
 - [статья](https://greenteapress.com/thinkos/html/thinkos013.html)
 - [еще статья](https://see.stanford.edu/materials/icsppcs107/23-Concurrency-Examples.pdf)
 
+**ВАЖНО** _У мьютекса ЕСТЬ OWNER, а у семафора НЕТ OWNER-a_ !!! Почитать вот [тут](https://man7.org/linux/man-pages/man3/pthread_mutex_lock.3p.html)  
+
+## Для 2.3  
+Читать [это](https://www.baeldung.com/cs/deadlock-livelock-starvation)
+
+Про [дедлоки](https://dextutor.com/program-to-create-deadlock-using-c-in-linux/)  
+
+Про [livelocks](https://stackoverflow.com/questions/1036364/good-example-of-livelock)  
 
 
-**ВАЖНО** _У мьютекса ЕСТЬ OWNER, а у семафора НЕТ OWNER-a_ !!! 
+### Про блокировки чтения-записи  
+- [pthread_rwlockattr_init](https://it.wikireading.ru/hyBPT2LMlq)  
+- [pthread_rwlock_destroy](https://www.ibm.com/docs/en/zos/2.3.0?topic=lf-pthread-rwlock-destroy-destroy-read-write-lock-object)  
+- [в целом](https://it.wikireading.ru/2368)  
+- [ОЧЕНЬ ХОРОШО НАПИСАНО + примерчик](https://intuit.ru/studies/professional_skill_improvements/1592/courses/53/lecture/1571?page=6)  
+- [Про приоритет читателя-писателя](https://stackoverflow.com/questions/55986628/prioritization-of-pthread-rwlock)  
+- [Discussion](https://copyprogramming.com/howto/problems-about-pthread-rwlock-wrlock-and-pthread-rwlock-wrlock)  
+

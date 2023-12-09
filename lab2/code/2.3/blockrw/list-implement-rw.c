@@ -19,7 +19,7 @@ Storage *createStorage(int capacity) {
 
 void initRWlock(Storage *storage, Node *node) {
   int errRWlockInit = pthread_rwlock_init(&node->sync, NULL);
-  if(errRWlockInit) {
+  if (errRWlockInit) {
     printf("rwlock init err: %s", strerror(errno));
     destroyStorage(storage);
     abort();
@@ -58,11 +58,20 @@ void generateValuesInStorage(Storage *storage) {
   }
 }
 
+void destroyRWlock(Node *node, Storage *storage) {
+  int errRWlockDestroy = pthread_rwlock_destroy(&node->sync);
+  if (errRWlockDestroy) {
+    printf("rwlock init err: %s", strerror(errno));
+    destroyStorage(storage);
+    abort();
+  }
+}
+
 void destroyStorage(Storage *storage) {
   Node *currentNode = storage->first;
   while (currentNode != NULL) {
     Node *nextNode = currentNode->next;
-    pthread_rwlock_destroy(&currentNode->sync);
+    destroyRWlock(currentNode, storage);
     free(currentNode);
     currentNode = nextNode;
   }

@@ -20,6 +20,7 @@ int DECREASING_LENGTH_COUNT = 0;
 int EQUAL_LENGTH_COUNT = 0;
 int SWAP_PERMUTATIONS_COUNT = 0;
 
+/* снятие блокировки чтения-записи */
 void execRWlockUnlock(pthread_rwlock_t *rwlock, Storage *storage) {
   if (pthread_rwlock_unlock(rwlock)) {
     printf("pthread_rwlock_unlock err: %s\n", strerror(errno));
@@ -28,6 +29,7 @@ void execRWlockUnlock(pthread_rwlock_t *rwlock, Storage *storage) {
   }
 }
 
+/* установка блокировки на запись */
 void execRWlockWRlock(pthread_rwlock_t *rwlock, Storage *storage) {
   if (pthread_rwlock_wrlock(rwlock)) {
     printf("pthread_rwlock_wrlock err: %s\n", strerror(errno));
@@ -36,8 +38,9 @@ void execRWlockWRlock(pthread_rwlock_t *rwlock, Storage *storage) {
   }
 }
 
+/* установка блокировки на чтение */
 void execRWlockRDlock(pthread_rwlock_t *rwlock, Storage *storage) {
-  if(pthread_rwlock_rdlock(rwlock)) {
+  if (pthread_rwlock_rdlock(rwlock)) {
     printf("pthread_rwlock_rdlock err: %s\n", strerror(errno));
     destroyStorage(storage);
     abort();
@@ -191,6 +194,7 @@ void *countSwapPermutations(void *data) {
     Node *curr3;
     Node *tmp;
     while (1) {
+      // сюда
       if (curr1 != NULL) {
         execRWlockWRlock(&curr1->sync, storage);
 
@@ -200,7 +204,7 @@ void *countSwapPermutations(void *data) {
             execRWlockWRlock(&curr1->next->next->sync, storage);
             curr2 = curr1->next;
             curr3 = curr1->next->next;
-            if (rand() % COEFF_OF_SWAPPING == 0) {
+            if (rand() % COEFF_OF_SWAPPING == 0) { //TODO
               curr2->next = curr3->next;
               curr3->next = curr2;
               curr1->next = curr3;
