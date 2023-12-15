@@ -1,6 +1,7 @@
 #include "list-spinlock.h"
 #include "stuff.h"
 
+#include <ctype.h>
 #include <errno.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -34,15 +35,14 @@ void destroySpinlock(pthread_spinlock_t *q) {
   }
 }
 
-void *countIncreasingLengthPairs(void *data) {
-  Storage *storage = (Storage *)data;
-
+void countPairs(Storage *storage,
+                int (*compare)(const char *, const char *)) {
+  if (storage->first == NULL || storage->first->next == NULL) {
+    printf("Not enough elems in storage to compare\n");
+    return;
+  }
   while (1) {
     Node *curr = storage->first;
-    if (curr == NULL || curr->next == NULL) {
-      printf("Not enough elems in storage to increase\n");
-      break;
-    }
     Node *curr2;
     Node *tmp;
     while (1) {
@@ -50,17 +50,18 @@ void *countIncreasingLengthPairs(void *data) {
         createSpinlock(&curr->sync);
         if (curr->next != NULL) {
           createSpinlock(&curr->next->sync);
-          volatile int amountPairIncrease = 0;
+          volatile int amountPair = 0;
           curr2 = curr->next;
-          if (strlen(curr->value) < strlen(curr2->value)) {
-            amountPairIncrease++;
+
+          if (compare(curr->value, curr2->value) == 0) {
+            amountPair++;
           }
+
           tmp = curr;
           curr = curr->next;
 
           destroySpinlock(&tmp->sync);
           destroySpinlock(&curr->sync);
-
         } else {
           tmp = curr;
           curr = curr->next;
@@ -73,94 +74,31 @@ void *countIncreasingLengthPairs(void *data) {
         curr = curr->next;
       }
     }
-    INCREASING_LENGTH_COUNT++;
+    if (compare == &increasingLengthCompare) {
+      INCREASING_LENGTH_COUNT++;
+    } else if (compare == &decreasingLengthCompare) {
+      DECREASING_LENGTH_COUNT++;
+    } else { // if (compare == &equalLengthCompare)
+      EQUAL_LENGTH_COUNT++;
+    }
   }
+}
+
+void *countIncreasingLengthPairs(void *data) {
+  Storage *storage = (Storage *)data;
+  countPairs(storage, &increasingLengthCompare);
   return NULL;
 }
 
 void *countDecreasingLengthPairs(void *data) {
   Storage *storage = (Storage *)data;
-  if (storage->first == NULL || storage->first->next == NULL) {
-    printf("Not enough elems in storage to descrease\n");
-    return NULL;
-  }
-  while (1) {
-    Node *curr = storage->first;
-    Node *curr2;
-    Node *tmp;
-    while (1) {
-      if (curr != NULL) {
-        createSpinlock(&curr->sync);
-
-        if (curr->next != NULL) {
-          createSpinlock(&curr->next->sync);
-          volatile int amountPairDecrease = 0;
-          curr2 = curr->next;
-          if (strlen(curr->value) == strlen(curr2->value)) {
-            amountPairDecrease++;
-          }
-          tmp = curr;
-          curr = curr->next;
-
-          destroySpinlock(&tmp->sync);
-          destroySpinlock(&curr->sync);
-        } else {
-          tmp = curr;
-          curr = curr->next;
-
-          destroySpinlock(&tmp->sync);
-        }
-      } else if (curr == NULL) {
-        break;
-      } else {
-        curr = curr->next;
-      }
-    }
-    DECREASING_LENGTH_COUNT++;
-  }
+  countPairs(storage, &decreasingLengthCompare);
   return NULL;
 }
 
-void *countEqualLengthPaits(void *data) {
+void *countEqualLengthPairs(void *data) {
   Storage *storage = (Storage *)data;
-  if (storage->first == NULL || storage->first->next == NULL) {
-    printf("Not enough elems in storage to equal\n");
-    return NULL;
-  }
-
-  while (1) {
-    Node *curr = storage->first;
-    Node *curr2;
-    Node *tmp;
-    while (1) {
-      if (curr != NULL) {
-        createSpinlock(&curr->sync);
-        if (curr->next != NULL) {
-          createSpinlock(&curr->next->sync);
-          volatile int amountPairEqual = 0;
-          curr2 = curr->next;
-          if (strlen(curr->value) > strlen(curr2->value)) {
-            amountPairEqual++;
-          }
-          tmp = curr;
-          curr = curr->next;
-
-          destroySpinlock(&tmp->sync);
-          destroySpinlock(&curr->sync);
-        } else {
-          tmp = curr;
-          curr = curr->next;
-
-          destroySpinlock(&tmp->sync);
-        }
-      } else if (curr == NULL) {
-        break;
-      } else {
-        curr = curr->next;
-      }
-    }
-    EQUAL_LENGTH_COUNT++;
-  }
+  countPairs(storage, &equalLengthCompare);
   return NULL;
 }
 
@@ -233,11 +171,13 @@ void *countSwapPermutations(void *data) {
 
             destroySpinlock(&curr1->next->sync);
             destroySpinlock(&curr1->sync);
+          } else {
+            destroySpinlock(&curr1->sync);
           }
-          destroySpinlock(&curr1->sync);
         } else {
           break;
         }
+        curr1 = curr1->next;
       }
     }
   }
@@ -264,6 +204,14 @@ int main(int argc, char **argv) {
     printf("Usage: %s <nodes count>\n", argv[0]);
     return 0;
   }
+
+  for (int i = 0; argv[1][i] != '\0'; i++) {
+    if (!isdigit(argv[1][i])) {
+      printf("%s is not a valid number\n", argv[1]);
+      return -11;
+    }
+  }
+
   int countNodes = atoi(argv[1]);
 
   srand(time(0));
@@ -279,6 +227,7 @@ int main(int argc, char **argv) {
                      countIncreasingLengthPairs,
                      (void *)storage) != 0) {
     printf("incr thread create: %s", strerror(errno));
+    free(storage);
     return -1;
   }
 
@@ -286,12 +235,14 @@ int main(int argc, char **argv) {
                      countDecreasingLengthPairs,
                      (void *)storage) != 0) {
     printf("decr thread create: %s", strerror(errno));
+    free(storage);
     return -1;
   }
 
-  if (pthread_create(&equalThread, NULL, countEqualLengthPaits,
+  if (pthread_create(&equalThread, NULL, countEqualLengthPairs,
                      (void *)storage) != 0) {
-    printf("EQUAL_LENGTH_COUNT thread create: %s", strerror(errno));
+    printf("equal thread create: %s", strerror(errno));
+    free(storage);
     return -1;
   }
 
@@ -300,6 +251,12 @@ int main(int argc, char **argv) {
   pthread_t swapThread3;
 
   int *swapCounters = calloc(SWAPS_AMOUNT, sizeof(int));
+  if (!swapCounters) {
+    printf("no mem for calloc(): %s", strerror(errno));
+    free(storage);
+    return -1;
+  }
+
   SwapInfo swapInfo1 = {storage, &swapCounters[SWAP1]};
   SwapInfo swapInfo2 = {storage, &swapCounters[SWAP2]};
   SwapInfo swapInfo3 = {storage, &swapCounters[SWAP3]};
@@ -308,6 +265,7 @@ int main(int argc, char **argv) {
                      &swapInfo1) != 0) {
     printf("SWAP_PERMUTATIONS_COUNT 1 thread create: %s",
            strerror(errno));
+    free(storage);
     return -1;
   }
 
@@ -315,6 +273,7 @@ int main(int argc, char **argv) {
                      &swapInfo2) != 0) {
     printf("SWAP_PERMUTATIONS_COUNT 2 thread create: %s",
            strerror(errno));
+    free(storage);
     return -1;
   }
 
@@ -322,6 +281,7 @@ int main(int argc, char **argv) {
                      &swapInfo3) != 0) {
     printf("SWAP_PERMUTATIONS_COUNT 3 thread create: %s",
            strerror(errno));
+    free(storage);
     return -1;
   }
 
@@ -329,16 +289,51 @@ int main(int argc, char **argv) {
   if (pthread_create(&display, NULL, countMonitor, swapCounters) !=
       0) {
     printf("display thread create: %s", strerror(errno));
+    free(storage);
     return -1;
   }
 
-  pthread_join(incrementThread, NULL);
-  pthread_join(decrementThread, NULL);
-  pthread_join(equalThread, NULL);
-  pthread_join(swapThread1, NULL);
-  pthread_join(swapThread2, NULL);
-  pthread_join(swapThread3, NULL);
-  pthread_join(display, NULL);
+  if (pthread_join(incrementThread, NULL) != 0) {
+    printf("incr thread join err: %s", strerror(errno));
+    free(storage);
+    return -1;
+  }
+
+  if (pthread_join(decrementThread, NULL) != 0) {
+    printf("decr thread join err: %s", strerror(errno));
+    destroyStorage(storage);
+    return -1;
+  }
+
+  if (pthread_join(equalThread, NULL) != 0) {
+    printf("equal thread join err: %s", strerror(errno));
+    destroyStorage(storage);
+    return -1;
+  }
+
+  if (pthread_join(swapThread1, NULL) != 0) {
+    printf("swap thread1 join err: %s", strerror(errno));
+    destroyStorage(storage);
+    return -1;
+  }
+
+  if (pthread_join(swapThread2, NULL) != 0) {
+    printf("swap thread2 join err: %s", strerror(errno));
+    destroyStorage(storage);
+    return -1;
+  }
+
+  if (pthread_join(swapThread3, NULL) != 0) {
+    printf("swap thread3 join err: %s", strerror(errno));
+    destroyStorage(storage);
+    return -1;
+  }
+
+  if (pthread_join(display, NULL) != 0) {
+    printf("diplay thread join err: %s", strerror(errno));
+    destroyStorage(storage);
+    return -1;
+  }
 
   destroyStorage(storage);
 
