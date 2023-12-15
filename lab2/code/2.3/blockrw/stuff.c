@@ -1,8 +1,10 @@
 #include "stuff.h"
 
+#include <ctype.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 char *generateRandomString(char *randomStr) {
   static char *charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOP"
@@ -17,4 +19,17 @@ char *generateRandomString(char *randomStr) {
   randomStr[randomLengthStr] = '\0';
 
   return randomStr;
+}
+
+
+int increasingLengthCompare(const char *str1, const char *str2) {
+  return strlen(str1) > strlen(str2);
+}
+
+int decreasingLengthCompare(const char *str1, const char *str2) {
+  return strlen(str1) < strlen(str2);
+}
+
+int equalLengthCompare(const char *str1, const char *str2) {
+  return strlen(str1) == strlen(str2);
 }

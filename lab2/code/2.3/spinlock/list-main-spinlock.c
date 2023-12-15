@@ -177,7 +177,6 @@ void *countSwapPermutations(void *data) {
         } else {
           break;
         }
-        curr1 = curr1->next;
       }
     }
   }
