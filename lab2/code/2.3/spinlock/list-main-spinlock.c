@@ -165,7 +165,6 @@ void *countEqualLengthPaits(void *data) {
 }
 
 void *countSwapPermutations(void *data) {
-
   SwapInfo *swapInfo = (SwapInfo *)data;
   Storage *storage = swapInfo->storage;
   int *counter = swapInfo->swapCounter;
@@ -182,45 +181,63 @@ void *countSwapPermutations(void *data) {
     Node *curr3;
     Node *tmp;
     while (1) {
-      if (curr1 != NULL) {
-        createSpinlock(&curr1->sync);
-        if (curr1->next != NULL) {
-          createSpinlock(&curr1->next->sync);
-          if (curr1->next->next != NULL) {
-            createSpinlock(&curr1->next->next->sync);
-            curr2 = curr1->next;
-            curr3 = curr1->next->next;
-            if (rand() % COEFF_OF_SWAPPING == 0) {
-              curr2->next = curr3->next;
-              curr3->next = curr2;
-              curr1->next = curr3;
-              (*counter)++;
+      int willSwap = (rand() % COEFF_OF_SWAPPING == 0);
+      if (willSwap) {
+        if (curr1 != NULL) {
+          createSpinlock(&curr1->sync);
+          if (curr1->next != NULL) {
+            createSpinlock(&curr1->next->sync);
+            if (curr1->next->next != NULL) {
+              createSpinlock(&curr1->next->next->sync);
+              curr2 = curr1->next;
+              curr3 = curr1->next->next;
+              {
+                curr2->next = curr3->next;
+                curr3->next = curr2;
+                curr1->next = curr3;
+                (*counter)++;
+              }
+              tmp = curr1;
+              curr1 = tmp->next;
+              curr2 = curr1->next;
+
+              destroySpinlock(&tmp->sync);
+              destroySpinlock(&curr1->sync);
+              destroySpinlock(&curr2->sync);
+
+            } else {
+              tmp = curr1;
+              curr1 = curr1->next;
+
+              destroySpinlock(&tmp->sync);
+              destroySpinlock(&curr1->sync);
             }
-            tmp = curr1;
-            curr1 = tmp->next;
-            curr2 = curr1->next;
-
-            destroySpinlock(&tmp->sync);
-            destroySpinlock(&curr1->sync);
-            destroySpinlock(&curr2->sync);
-
           } else {
             tmp = curr1;
             curr1 = curr1->next;
 
             destroySpinlock(&tmp->sync);
+          }
+        } else if (curr1 == NULL) {
+          break;
+        }
+      }
+      // if won't swap
+      else {
+        if (curr1 != NULL) {
+          createSpinlock(&curr1->sync);
+          if (curr1->next != NULL) {
+            createSpinlock(&curr1->next->sync);
+            curr2 = curr1->next;
+            curr2 = curr1;
+
+            destroySpinlock(&curr1->next->sync);
             destroySpinlock(&curr1->sync);
           }
+          destroySpinlock(&curr1->sync);
         } else {
-          tmp = curr1;
-          curr1 = curr1->next;
-
-          destroySpinlock(&tmp->sync);
+          break;
         }
-      } else if (curr1 == NULL) {
-        break;
-      } else {
-        curr1 = curr1->next;
       }
     }
   }
@@ -230,12 +247,12 @@ void *countSwapPermutations(void *data) {
 void *countMonitor(void *arg) {
   int *swapCounters = (int *)arg;
   while (1) {
-    printf(
-        "incr: %d, decr: %d, equal: %d, swap1: %d, swap2: %d, swap3: "
-        "%d\n",
-        INCREASING_LENGTH_COUNT, DECREASING_LENGTH_COUNT,
-        EQUAL_LENGTH_COUNT, swapCounters[SWAP1], swapCounters[SWAP2],
-        swapCounters[SWAP3]);
+    printf("incr: %d, decr: %d, equal: %d, swap1: %d, swap2: %d, "
+           "swap3: "
+           "%d\n",
+           INCREASING_LENGTH_COUNT, DECREASING_LENGTH_COUNT,
+           EQUAL_LENGTH_COUNT, swapCounters[SWAP1],
+           swapCounters[SWAP2], swapCounters[SWAP3]);
 
     sleep(1);
   }
@@ -324,6 +341,6 @@ int main(int argc, char **argv) {
   pthread_join(display, NULL);
 
   destroyStorage(storage);
-  
+
   return 0;
 }
