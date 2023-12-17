@@ -156,7 +156,7 @@ void *countSwapPermutations(void *data) {
 
             destroySpinlock(&tmp->sync);
           }
-        } else if (curr1 == NULL) {
+        } else {
           break;
         }
       }
@@ -207,7 +207,7 @@ int main(int argc, char **argv) {
   for (int i = 0; argv[1][i] != '\0'; i++) {
     if (!isdigit(argv[1][i])) {
       printf("%s is not a valid number\n", argv[1]);
-      return -11;
+      return -1;
     }
   }
 
@@ -294,7 +294,7 @@ int main(int argc, char **argv) {
 
   if (pthread_join(incrementThread, NULL) != 0) {
     printf("incr thread join err: %s", strerror(errno));
-    free(storage);
+    destroyStorage(storage);
     return -1;
   }
 

@@ -133,19 +133,18 @@ void *countSwapPermutations(void *data) {
     Node *curr3;
     Node *tmp;
     while (1) {
-      // сюда
       int willSwap = (rand() % COEFF_OF_SWAPPING == 0);
+
       if (willSwap) {
         if (curr1 != NULL) {
           execRWlockWRlock(&curr1->sync, storage);
-
           if (curr1->next != NULL) {
             execRWlockWRlock(&curr1->next->sync, storage);
             if (curr1->next->next != NULL) {
               execRWlockWRlock(&curr1->next->next->sync, storage);
               curr2 = curr1->next;
               curr3 = curr1->next->next;
-              if (rand() % COEFF_OF_SWAPPING == 0) {
+              {
                 curr2->next = curr3->next;
                 curr3->next = curr2;
                 curr1->next = curr3;
@@ -172,10 +171,8 @@ void *countSwapPermutations(void *data) {
 
             execRWlockUnlock(&tmp->sync, storage);
           }
-        } else if (curr1 == NULL) {
-          break;
         } else {
-          curr1 = curr1->next;
+          break;
         }
       }
       // if won't swap
@@ -200,7 +197,6 @@ void *countSwapPermutations(void *data) {
   }
   return NULL;
 }
-// */
 
 void *countMonitor(void *arg) {
   int *swapCounters = (int *)arg;
@@ -226,7 +222,7 @@ int main(int argc, char **argv) {
   for (int i = 0; argv[1][i] != '\0'; i++) {
     if (!isdigit(argv[1][i])) {
       printf("%s is not a valid number\n", argv[1]);
-      return -11;
+      return -1;
     }
   }
 
@@ -313,7 +309,7 @@ int main(int argc, char **argv) {
 
   if (pthread_join(incrementThread, NULL) != 0) {
     printf("incr thread join err: %s", strerror(errno));
-    free(storage);
+    destroyStorage(storage);
     return -1;
   }
 

@@ -123,17 +123,17 @@ void *countSwapPermutations(void *data) {
     Node *tmp;
     while (1) {
       int willSwap = (rand() % COEFF_OF_SWAPPING == 0);
+
       if (willSwap) {
         if (curr1 != NULL) {
           execMutexlock(&curr1->sync, storage);
-
           if (curr1->next != NULL) {
             execMutexlock(&curr1->next->sync, storage);
             if (curr1->next->next != NULL) {
               execMutexlock(&curr1->next->next->sync, storage);
               curr2 = curr1->next;
               curr3 = curr1->next->next;
-              if (rand() % COEFF_OF_SWAPPING == 0) {
+              {
                 curr2->next = curr3->next;
                 curr3->next = curr2;
                 curr1->next = curr3;
@@ -162,8 +162,6 @@ void *countSwapPermutations(void *data) {
           }
         } else if (curr1 == NULL) {
           break;
-        } else {
-          curr1 = curr1->next;
         }
       }
       // if won' swap
@@ -213,7 +211,7 @@ int main(int argc, char **argv) {
   for (int i = 0; argv[1][i] != '\0'; i++) {
     if (!isdigit(argv[1][i])) {
       printf("%s is not a valid number\n", argv[1]);
-      return -11;
+      return -1;
     }
   }
 
@@ -300,7 +298,7 @@ int main(int argc, char **argv) {
 
   if (pthread_join(incrementThread, NULL) != 0) {
     printf("incr thread join err: %s", strerror(errno));
-    free(storage);
+    destroyStorage(storage);
     return -1;
   }
 
