@@ -170,7 +170,6 @@ void *countSwapPermutations(void *data) {
           execMutexlock(&curr1->sync, storage);
           if (curr1->next != NULL) {
             execMutexlock(&curr1->next->sync, storage);
-            curr2 = curr1->next;
             curr2 = curr1;
 
             execMutexUnlock(&curr1->next->sync, storage);

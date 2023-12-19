@@ -166,7 +166,6 @@ void *countSwapPermutations(void *data) {
           createSpinlock(&curr1->sync);
           if (curr1->next != NULL) {
             createSpinlock(&curr1->next->sync);
-            curr2 = curr1->next;
             curr2 = curr1;
 
             destroySpinlock(&curr1->next->sync);

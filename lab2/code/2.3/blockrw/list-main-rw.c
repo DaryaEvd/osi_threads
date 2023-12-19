@@ -181,7 +181,6 @@ void *countSwapPermutations(void *data) {
           execRWlockWRlock(&curr1->sync, storage);
           if (curr1->next != NULL) {
             execRWlockWRlock(&curr1->next->sync, storage);
-            curr2 = curr1->next;
             curr2 = curr1;
 
             execRWlockUnlock(&curr1->next->sync, storage);
