@@ -15,13 +15,15 @@ typedef struct Request {
   int minorVer;
   size_t lengthMethod;
   size_t lengthPath;
+  size_t lengthBuf;
+  size_t lengthPrevBuf;
 } Request_t;
 
-int parseHttpRequest(char *buffer, int bufferLength, char *ip,
+int parseHttpRequest(char *buffer, ssize_t bufferLength, char *ip,
                      int lengthIP, char *port);
 
 void displayHeader(struct phr_header *headers, size_t numHeaders,
-                   char *buffer, char *currArrHeaders);
+                   char *buffer, char *currArrHeaders, ssize_t bufLength);
 
 void parseHeader(char *currArrHeaders, char *ip, char *port);
 

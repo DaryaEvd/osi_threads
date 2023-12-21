@@ -47,13 +47,13 @@ int initSocketListener(int socketListener, int port) {
   return socketListener;
 }
 
-void exchangeData(char *buffer, int hostSocketFD, int clientSocjetFD,
+void exchangeData(char *buffer, int hostSocketFD, int clientSocketFD,
                   int writeBytesToHost, int readBytesFromClient) {
   // write to host
   writeBytesToHost = write(hostSocketFD, buffer, readBytesFromClient);
   if (writeBytesToHost == -1) {
     printf("error: write(): '%s'\n", strerror(errno));
-    close(clientSocjetFD);
+    close(clientSocketFD);
     close(hostSocketFD);
     free(buffer);
     return;
@@ -64,7 +64,7 @@ void exchangeData(char *buffer, int hostSocketFD, int clientSocjetFD,
     readBytesFromClient = read(hostSocketFD, buffer, BUFFER_SIZE);
     if (readBytesFromClient == -1) {
       printf("error: read(): '%s'\n", strerror(errno));
-      close(clientSocjetFD);
+      close(clientSocketFD);
       close(hostSocketFD);
       free(buffer);
       return;
@@ -74,10 +74,10 @@ void exchangeData(char *buffer, int hostSocketFD, int clientSocjetFD,
 
     // write response to client
     writeBytesToHost =
-        write(clientSocjetFD, buffer, readBytesFromClient);
+        write(clientSocketFD, buffer, readBytesFromClient);
     if (writeBytesToHost == -1) {
       printf("error: write(): '%s'\n", strerror(errno));
-      close(clientSocjetFD);
+      close(clientSocketFD);
       close(hostSocketFD);
       free(buffer);
       return;
