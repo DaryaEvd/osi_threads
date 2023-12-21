@@ -76,9 +76,7 @@ int parseHttpRequest(char *buffer, ssize_t bufferLength, char *ip,
 void displayHeader(struct phr_header *headers, size_t numHeaders,
                    char *buffer, char *currArrHeaders,
                    ssize_t bufLength) {
-  printf("buf len %ld\n", bufLength);
   size_t i;
-  printf("before: %ld\n", numHeaders);
   for (i = 0; i < numHeaders; i++) {
     if (strncmp(headers[i].name, "Host", headers[i].name_len) == 0) {
       break;
