@@ -85,35 +85,34 @@ int execHttpProxy(const int port) {
 }
 
 void *handleRequestConnection(void *args) {
-  // /*
   int clientSocketFD = *((int *)args);
   int hostSocketFD = -1;
   struct sockaddr_in hostAddr;
   char hostIP[16] = {0};
   char hostPort[8] = {0};
-  ssize_t readBytesFromClient = 0;
-  ssize_t writeBytesToHost = 0;
 
-  char *buffer = malloc(BUFFER_SIZE * sizeof(char));
+  char *buffer = malloc(BUFFER_SIZE * sizeof(char *));
   if (!buffer) {
     printf("handleRequestConnection: malloc() '%s'\n",
            strerror(errno));
+    close(clientSocketFD);
     return NULL;
   }
 
-  printf("\n got new connection request on socket %d\n",
+  printf("\n----- got new connection request on socket %d\n",
          clientSocketFD);
 
   // read from client
-  readBytesFromClient = read(clientSocketFD, buffer, BUFFER_SIZE);
+  ssize_t readBytesFromClient =
+      read(clientSocketFD, buffer, BUFFER_SIZE);
   if (readBytesFromClient == -1) {
     printf("handleRequestConnection: read() '%s'\n", strerror(errno));
     free(buffer);
     close(clientSocketFD);
     return NULL;
   } else if (readBytesFromClient == 0) {
-    printf("connection on socket %d has been lost\n", clientSocketFD);
     free(buffer);
+    printf("connection on socket %d has been lost\n", clientSocketFD);
     close(clientSocketFD);
     return NULL;
   }
@@ -121,20 +120,22 @@ void *handleRequestConnection(void *args) {
   int resOfParsing = parseHttpRequest(
       buffer, readBytesFromClient, hostIP, sizeof(hostIP), hostPort);
   if (resOfParsing == -1) {
-    printf("error in parseHttpRequest()\n");
     free(buffer);
+    printf("----- close connection by crash on socket %d\n",
+           clientSocketFD);
     close(clientSocketFD);
     return NULL;
   }
 
-  printf("trying connect to host: '%s:%s' on socket %d\n", hostIP,
-         hostPort, clientSocketFD);
+  printf("-------trying connect to host: '%s:%s' on socket %d\n",
+         hostIP, hostPort, clientSocketFD);
 
   hostSocketFD = socket(AF_INET, SOCK_STREAM, 0);
   if (hostSocketFD == -1) {
     printf("handleRequestConnection: socket(): '%s'\n",
            strerror(errno));
     free(buffer);
+    printf("----- close connection on socket %d\n", clientSocketFD);
     close(clientSocketFD);
     return NULL;
   }
@@ -145,6 +146,7 @@ void *handleRequestConnection(void *args) {
     printf("handleRequestConnection: inet_pton(): '%s'\n",
            strerror(errno));
     free(buffer);
+    printf("----- close connection on socket %d\n", clientSocketFD);
     close(clientSocketFD);
     close(hostSocketFD);
     return NULL;
@@ -157,24 +159,24 @@ void *handleRequestConnection(void *args) {
     printf("handleRequestConnection: connect(): '%s'\n",
            strerror(errno));
     free(buffer);
+    printf("----- close connection on socket %d\n", clientSocketFD);
     close(clientSocketFD);
     close(hostSocketFD);
     return NULL;
   }
 
-  printf("connection to host '%s':'%s' on socket %d has been "
+  printf("connection to host '%s:%s' on socket %d has been "
          "successful\n",
          hostIP, hostPort, clientSocketFD);
 
+  ssize_t writeBytesToHost = 0;
   exchangeData(buffer, hostSocketFD, clientSocketFD, writeBytesToHost,
                readBytesFromClient);
 
-  printf("closing connection on socket %d\n", clientSocketFD);
+  printf("--- closing connection on socket %d\n", clientSocketFD);
 
   free(buffer);
   close(clientSocketFD);
   close(hostSocketFD);
   return NULL;
-
-  // */
 }

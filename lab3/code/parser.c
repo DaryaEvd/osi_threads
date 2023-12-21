@@ -14,16 +14,17 @@ int parseHttpRequest(char *buffer, ssize_t bufferLength, char *ip,
                      int lengthIP, char *port) {
 
   Request_t *request = malloc(sizeof(*request));
+  if (!request) {
+    printf("parseHttpRequest: '%s'\n", strerror(errno));
+    return -1;
+  }
   request->numHeaders = AMOUNT_HEADERS;
   request->lengthBuf = bufferLength;
-
-  char currArrHeaders[HEADER_SIZE];
 
   int errorParse = phr_parse_request(
       buffer, request->lengthBuf, &request->method,
       &request->lengthMethod, &request->path, &request->lengthPath,
       &request->minorVer, request->headers, &request->numHeaders, 0);
-  printf("buflen %ld \n", request->lengthBuf);
 
   if (errorParse == -1) {
     printf("parseHttpRequest: phr_parse_request() '%s'\n",
@@ -31,44 +32,33 @@ int parseHttpRequest(char *buffer, ssize_t bufferLength, char *ip,
     return -1;
   }
 
-  // TODO: check name of request
+  // here we prevent all methods except GET
+  char *startOfSecondWordInBuffer = strchr(buffer, ' ');
+  size_t lengthOfFirst = startOfSecondWordInBuffer - buffer;
+  char *firstInBuffer =
+      (char *)malloc((lengthOfFirst + 1) * sizeof(char));
+  if (!firstInBuffer) {
+    printf("parseHttpRequest: malloc() '%s'", strerror(errno));
+    free(request);
+    return -1;
+  }
+  strncpy(firstInBuffer, buffer, lengthOfFirst);
 
-  char *startOfSecond = strchr(buffer, ' ');
-  size_t lengthOfFirst = startOfSecond - buffer;
-  char *first = (char *)malloc((lengthOfFirst + 1) * sizeof(char));
-  strncpy(first, buffer, lengthOfFirst);
-  ////
-
-  printf("firsr is: %s\n", first);
-
-  // for (ssize_t j = 0; j < 10; j++) {
-  //   printf("%c ", buffer[j]);
-  // }
-  // printf("\n");
-
-  int canDiaplsy = 1;
-  if (first[0] == 'G' && first[1] == 'E' && first[2] == 'T') {
-    canDiaplsy = 1;
-  } else {
-    canDiaplsy = 0;
-    printf("YOU CAN'T EXEC COMMANDS EXCEPT GET !!!! \n");
+  if (!(firstInBuffer[0] == 'G' && firstInBuffer[1] == 'E' &&
+        firstInBuffer[2] == 'T')) {
+    printf("you can't exec commands except GET !!!! \n");
+    free(request);
+    free(firstInBuffer);
     return -1;
   }
 
+  char currArrHeaders[HEADER_SIZE];
   displayHeader(request->headers, request->numHeaders, buffer,
                 currArrHeaders, request->lengthBuf);
 
   parseHeader(currArrHeaders, ip, port);
 
-  if (strcmp(port, BASE_PORT_HTTP) != 0) {
-    printf("warning: get port which is default for unsupported "
-           "protocol\n");
-    // close()
-    return -1; // ???
-    // return -2;
-  }
-
-  printf("trying to resolve ip: '%s'\n", ip);
+  printf("------trying to resolve ip: '%s'\n", ip);
 
   struct addrinfo *result = NULL;
   struct addrinfo hints;
@@ -94,9 +84,6 @@ void displayHeader(struct phr_header *headers, size_t numHeaders,
       break;
     }
   }
-
-  printf("after %ld\n", numHeaders);
-  printf("indx: %ld\n", i);
 
   printf("headers: '%s'\n", headers->name);
 
