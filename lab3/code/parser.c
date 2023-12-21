@@ -26,7 +26,7 @@ int parseHttpRequest(char *buffer, ssize_t bufferLength, char *ip,
   printf("buflen %ld \n", request->lengthBuf);
 
   if (errorParse == -1) {
-    printf("parseHttpRequest: phr_parse_request() ''%s''\n",
+    printf("parseHttpRequest: phr_parse_request() '%s'\n",
            strerror(errno));
     return -1;
   }
@@ -68,7 +68,7 @@ int parseHttpRequest(char *buffer, ssize_t bufferLength, char *ip,
     // return -2;
   }
 
-  printf("trying to resolve ip: ''%s''\n", ip);
+  printf("trying to resolve ip: '%s'\n", ip);
 
   struct addrinfo *result = NULL;
   struct addrinfo hints;
@@ -124,7 +124,7 @@ int resolveDomainName(struct addrinfo hints, char *ip, int lengthIP,
   hints.ai_socktype = SOCK_STREAM;
 
   if (getaddrinfo(ip, "http", &hints, &result) != 0) {
-    printf("parseHttpRequest: getaddrinfo(): ''%s''\n",
+    printf("parseHttpRequest: getaddrinfo(): '%s'\n",
            strerror(errno));
     return -1;
   }
@@ -141,7 +141,7 @@ int resolveDomainName(struct addrinfo hints, char *ip, int lengthIP,
       freeaddrinfo(result);
       return 0;
     } else {
-      printf("parseHttpRequest: inet_ntop(): ''%s''\n",
+      printf("parseHttpRequest: inet_ntop(): '%s'\n",
              strerror(errno));
       freeaddrinfo(result);
     }

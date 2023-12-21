@@ -20,27 +20,27 @@ int initSocketListener(int socketListener, int port) {
 
   socketListener = socket(AF_INET, SOCK_STREAM, 0);
   if (socketListener == -1) {
-    printf("initSocketListener: socket(): ''%s''\n", strerror(errno));
+    printf("initSocketListener: socket(): '%s'\n", strerror(errno));
     return -1;
   }
 
   int enableReusing = 1;
   if (setsockopt(socketListener, SOL_SOCKET, SO_REUSEADDR,
                  &enableReusing, sizeof(enableReusing)) < 0) {
-    printf("initSocketListener: setsockopt(): ''%s''\n",
+    printf("initSocketListener: setsockopt(): '%s'\n",
            strerror(errno));
     return -1;
   }
 
   if (bind(socketListener, (struct sockaddr *)&addrProxy,
            sizeof(addrProxy)) == -1) {
-    printf("initSocketListener: bind(): ''%s''\n", strerror(errno));
+    printf("initSocketListener: bind(): '%s'\n", strerror(errno));
     return -1;
   }
 
   int maxAmountConnection = 100;
   if (listen(socketListener, maxAmountConnection) == -1) {
-    printf("initSocketListener: listen(): ''%s''\n", strerror(errno));
+    printf("initSocketListener: listen(): '%s'\n", strerror(errno));
     return -1;
   }
 

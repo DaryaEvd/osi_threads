@@ -15,9 +15,9 @@
 #include "proxy.h"
 
 int execHttpProxy(const int port) {
-  int socketListener = -1;
-  printf("proxy is starting ...\n");
+  printf("Http proxy is starting ...\n");
 
+  int socketListener = -1;
   socketListener = initSocketListener(socketListener, port);
   if (socketListener == -1) {
     printf("execHttpProxy: error in init listener socket '%s'\n",
@@ -26,10 +26,9 @@ int execHttpProxy(const int port) {
     return -1;
   }
 
-  printf("Http proxy is ready for connections\n");
+  printf("Http proxy is ready for connections!\n");
 
   while (1) {
-
     struct sockaddr_in addrClient;
     socklen_t addrClientLength = sizeof(addrClient);
     addrClient.sin_family = AF_INET;
@@ -38,13 +37,13 @@ int execHttpProxy(const int port) {
         accept(socketListener, (struct sockaddr *)&addrClient,
                &addrClientLength);
     if (clientSocketFD == -1) {
-      printf("execHttpProxy: accept(): ''%s''\n", strerror(errno));
+      printf("execHttpProxy: accept(): '%s'\n", strerror(errno));
       continue;
     }
 
     pthread_attr_t attrs;
     if (pthread_attr_init(&attrs) != 0) {
-      printf("execHttpProxy: pthread_attr_init(): ''%s''\n",
+      printf("execHttpProxy: pthread_attr_init(): '%s'\n",
              strerror(errno));
       close(socketListener);
       return -1;
@@ -52,7 +51,7 @@ int execHttpProxy(const int port) {
 
     if (pthread_attr_setdetachstate(&attrs,
                                     PTHREAD_CREATE_DETACHED) != 0) {
-      printf("execHttpProxy: pthread_attr_setdetachstate(): ''%s''\n",
+      printf("execHttpProxy: pthread_attr_setdetachstate(): '%s'\n",
              strerror(errno));
       pthread_attr_destroy(&attrs);
       close(clientSocketFD);
@@ -61,13 +60,11 @@ int execHttpProxy(const int port) {
 
     int *args = malloc(sizeof(*args));
     if (!args) {
-      printf(
-          "execHttpProxy: can't alloc mem for thread args: ''%s''\n",
-          strerror(errno));
+      printf("execHttpProxy: can't alloc mem for thread args: '%s'\n",
+             strerror(errno));
       pthread_attr_destroy(&attrs);
       close(clientSocketFD);
       return -1;
-      // exit(EXIT_FAILURE);
     }
 
     pthread_t thread;
@@ -81,44 +78,10 @@ int execHttpProxy(const int port) {
       free(args);
 
       continue;
-      // return -1;
     }
 
     pthread_attr_destroy(&attrs);
   }
-}
-
-int connect_to_target(char *host, int port) {
-  struct hostent *he;
-  struct sockaddr_in server_addr;
-  int sock;
-
-  // Получение информации о хосте
-  if ((he = gethostbyname(host)) == NULL) {
-    herror("gethostbyname failed");
-    return -1;
-  }
-
-  // Создание сокета
-  if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-    perror("Socket creation error");
-    return -1;
-  }
-
-  // Настройка параметров сервера
-  server_addr.sin_family = AF_INET;
-  server_addr.sin_port = htons(port);
-  server_addr.sin_addr = *((struct in_addr *)he->h_addr_list[0]);
-  memset(server_addr.sin_zero, 0, sizeof(server_addr.sin_zero));
-
-  // Подключение к серверу
-  if (connect(sock, (struct sockaddr *)&server_addr,
-              sizeof(server_addr)) < 0) {
-    perror("Connection Failed");
-    return -1;
-  }
-
-  return sock;
 }
 
 void *handleRequestConnection(void *args) {
@@ -215,85 +178,3 @@ void *handleRequestConnection(void *args) {
 
   // */
 }
-
-/*
-  int client_sock = *(int *)args;
-  char buffer[BUFFER_SIZE];
-  int target_sock, read_bytes;
-  int data_size = 0;
-  char *data = NULL;
-
-  // Чтение запроса от клиента
-  while (1) {
-    read_bytes = recv(client_sock, buffer, BUFFER_SIZE, 0);
-    if (read_bytes <= 0) {
-      break;
-    }
-
-    data = realloc(data, data_size + read_bytes);
-    memcpy(data + data_size, buffer, read_bytes);
-    data_size += read_bytes;
-
-    // Проверка на наличие CRLF
-    if (strstr(data, "\r\n\r\n") != NULL) {
-      break;
-    }
-  }
-
-  // Извлечение имени хоста из запроса
-  char host[_SC_HOST_NAME_MAX + 1] = {0};
-  char *host_line_start = strstr(data, "Host: ");
-  if (!host_line_start) {
-    host_line_start = strstr(
-        data, "host: "); // Попытка найти заголовок в другом
-  регистре
-  }
-
-  if (host_line_start) {
-    char *host_line_end = strstr(host_line_start, "\r\n");
-    if (!host_line_end) {
-      host_line_end = strstr(host_line_start, "\n");
-    }
-
-    if (host_line_end) {
-      int host_length = host_line_end - (host_line_start + 6);
-      strncpy(host, host_line_start + 6, host_length);
-      host[host_length] =
-          '\0'; // Обеспечиваем правильное завершение строки
-    } else {
-      printf("Host header line end not found.\n");
-    }
-  } else {
-    printf("Host header not found in request.\n");
-    close(client_sock);
-    return NULL;
-  }
-
-  printf("Connecting to host: %s\n", host);
-
-  // Подключение к целевому серверу
-  target_sock = connect_to_target(
-      host, 80); // Используем PORT, определенный в начале программы
-  if (target_sock < 0) {
-    close(client_sock);
-    return NULL;
-  }
-
-
-  // Передача запроса на целевой сервер
-  send(target_sock, data, data_size, 0);
-  free(data);
-
-  // Передача ответа обратно клиенту
-  while ((read_bytes = recv(target_sock, buffer, BUFFER_SIZE, 0)) >
-         0) {
-    send(client_sock, buffer, read_bytes, 0);
-  }
-
-  printf("------connection to  %s %d\n", host, target_sock);
-
-  // Закрытие соединений
-  close(target_sock);
-  close(client_sock);
-  return NULL;
-  */

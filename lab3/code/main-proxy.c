@@ -19,7 +19,10 @@ int main(int argc, char **argv) {
 
   int portServer = atoi(argv[1]);
 
-  execHttpProxy(portServer);
+  int resOfExecuting = execHttpProxy(portServer);
+  if (resOfExecuting == -1) {
+    printf("error while executing http proxy\n");
+  }
 
   return 0;
 }
