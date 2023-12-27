@@ -5,7 +5,7 @@
 
 int initSocketListener(int socketListener, int port);
 
-void exchangeData(char *buffer, int hostSocketFD, int clientSocketFD,
+int exchangeData(char *buffer, int hostSocketFD, int clientSocketFD,
                   int writeBytesToHost, int readBytesFromClient);
 
 #endif // NETWORK_H__

@@ -58,7 +58,7 @@ int execHttpProxy(const int port) {
       return -1;
     }
 
-    int *args = malloc(sizeof(*args));
+    int *args = malloc(sizeof(int));
     if (!args) {
       printf("execHttpProxy: can't alloc mem for thread args: '%s'\n",
              strerror(errno));
@@ -73,9 +73,8 @@ int execHttpProxy(const int port) {
                        args) != 0) {
       printf("execHttpProxy: pthread_create(): '%s'\n",
              strerror(errno));
-      pthread_attr_destroy(&attrs);
-      close(clientSocketFD);
       free(args);
+      pthread_attr_destroy(&attrs);
 
       continue;
     }
@@ -86,15 +85,18 @@ int execHttpProxy(const int port) {
 
 void *handleRequestConnection(void *args) {
   int clientSocketFD = *((int *)args);
+  free(args);
+
   int hostSocketFD = -1;
   struct sockaddr_in hostAddr;
   char hostIP[16] = {0};
   char hostPort[8] = {0};
 
-  char *buffer = malloc(BUFFER_SIZE * sizeof(char *));
+  char *buffer = calloc(BUFFER_SIZE, sizeof(char *));
   if (!buffer) {
     printf("handleRequestConnection: malloc() '%s'\n",
            strerror(errno));
+    buffer = NULL;
     close(clientSocketFD);
     return NULL;
   }
@@ -170,12 +172,18 @@ void *handleRequestConnection(void *args) {
          hostIP, hostPort, clientSocketFD);
 
   ssize_t writeBytesToHost = 0;
-  exchangeData(buffer, hostSocketFD, clientSocketFD, writeBytesToHost,
-               readBytesFromClient);
+  if (exchangeData(buffer, hostSocketFD, clientSocketFD,
+                   writeBytesToHost, readBytesFromClient) == -1) {
+    free(buffer);
+    close(clientSocketFD);
+    close(hostSocketFD);
+    return NULL;
+  }
 
   printf("--- closing connection on socket %d\n", clientSocketFD);
 
   free(buffer);
+
   close(clientSocketFD);
   close(hostSocketFD);
   return NULL;

@@ -5,7 +5,7 @@
 #include <netdb.h>
 #include <unistd.h>
 
-#define AMOUNT_HEADERS 100
+#define AMOUNT_HEADERS 100 
 
 typedef struct Request {
   struct phr_header headers[AMOUNT_HEADERS];

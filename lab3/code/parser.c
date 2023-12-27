@@ -29,6 +29,7 @@ int parseHttpRequest(char *buffer, ssize_t bufferLength, char *ip,
   if (errorParse == -1) {
     printf("parseHttpRequest: phr_parse_request() '%s'\n",
            strerror(errno));
+    free(request);
     return -1;
   }
 
@@ -52,9 +53,13 @@ int parseHttpRequest(char *buffer, ssize_t bufferLength, char *ip,
     return -1;
   }
 
+  free(firstInBuffer);
+
   char currArrHeaders[HEADER_SIZE];
   displayHeader(request->headers, request->numHeaders, buffer,
                 currArrHeaders, request->lengthBuf);
+
+  free(request);
 
   parseHeader(currArrHeaders, ip, port);
 
@@ -67,6 +72,8 @@ int parseHttpRequest(char *buffer, ssize_t bufferLength, char *ip,
   int errResolver = resolveDomainName(hints, ip, lengthIP, result);
   if (errResolver == -1) {
     printf("parseHttpRequest: can't resolve a domain name\n");
+    freeaddrinfo(result);
+    result = NULL;
     return -1;
   }
 
@@ -108,10 +115,12 @@ int resolveDomainName(struct addrinfo hints, char *ip, int lengthIP,
   hints.ai_family = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
 
+  int ret = -1;
+
   if (getaddrinfo(ip, "http", &hints, &result) != 0) {
     printf("parseHttpRequest: getaddrinfo(): '%s'\n",
            strerror(errno));
-    return -1;
+    return ret;
   }
 
   memset(ip, 0, lengthIP);
@@ -123,13 +132,16 @@ int resolveDomainName(struct addrinfo hints, char *ip, int lengthIP,
     void *addr = &(currAddr->sin_addr);
 
     if (inet_ntop(AF_INET, addr, ip, lengthIP) != NULL) {
-      freeaddrinfo(result);
-      return 0;
+      ret = 0;
+      break;
     } else {
       printf("parseHttpRequest: inet_ntop(): '%s'\n",
              strerror(errno));
-      freeaddrinfo(result);
+      ret = -1;
+      break;
     }
   }
-  return -1;
+
+  freeaddrinfo(result);
+  return ret;
 }
