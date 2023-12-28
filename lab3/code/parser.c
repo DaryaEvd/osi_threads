@@ -124,6 +124,7 @@ int resolveDomainName(struct addrinfo hints, char *ip, int lengthIP,
 void displayHeader(struct phr_header *headers, size_t numHeaders,
                    char *buffer, char *currArrHeaders,
                    ssize_t bufLength) {
+
   printf("----- start headers show ---------------------- \n");
   printf("%s", buffer);
   printf("--------------------- end headers show ------\n\n");
