@@ -70,8 +70,6 @@ void countPairs(Storage *storage,
         }
       } else if (curr == NULL) {
         break;
-      } else {
-        curr = curr->next;
       }
     }
     if (compare == &increasingLengthCompare) {
@@ -103,9 +101,8 @@ void *countEqualLengthPairs(void *data) {
 }
 
 void *countSwapPermutations(void *data) {
-  SwapInfo *swapInfo = (SwapInfo *)data;
-  Storage *storage = swapInfo->storage;
-  int *counter = swapInfo->swapCounter;
+
+  Storage *storage = (Storage *)data;
 
   while (1) {
     Node *curr1 = storage->first;
@@ -120,6 +117,7 @@ void *countSwapPermutations(void *data) {
     Node *tmp;
     while (1) {
       int willSwap = (rand() % COEFF_OF_SWAPPING == 0);
+
       if (willSwap) {
         if (curr1 != NULL) {
           createSpinlock(&curr1->sync);
@@ -133,11 +131,12 @@ void *countSwapPermutations(void *data) {
                 curr2->next = curr3->next;
                 curr3->next = curr2;
                 curr1->next = curr3;
-                (*counter)++;
               }
               tmp = curr1;
               curr1 = tmp->next;
               curr2 = curr1->next;
+
+              SWAP_PERMUTATIONS_COUNT++;
 
               destroySpinlock(&tmp->sync);
               destroySpinlock(&curr1->sync);
@@ -183,14 +182,10 @@ void *countSwapPermutations(void *data) {
 }
 
 void *countMonitor(void *arg) {
-  int *swapCounters = (int *)arg;
   while (1) {
-    printf("incr: %d, decr: %d, equal: %d, swap1: %d, swap2: %d, "
-           "swap3: "
-           "%d\n",
+    printf("incr: %d, decr: %d, equal: %d, swap: %d \n",
            INCREASING_LENGTH_COUNT, DECREASING_LENGTH_COUNT,
-           EQUAL_LENGTH_COUNT, swapCounters[SWAP1],
-           swapCounters[SWAP2], swapCounters[SWAP3]);
+           EQUAL_LENGTH_COUNT, SWAP_PERMUTATIONS_COUNT);
 
     sleep(1);
   }
@@ -248,19 +243,8 @@ int main(int argc, char **argv) {
   pthread_t swapThread2;
   pthread_t swapThread3;
 
-  int *swapCounters = calloc(SWAPS_AMOUNT, sizeof(int));
-  if (!swapCounters) {
-    printf("no mem for calloc(): %s", strerror(errno));
-    free(storage);
-    return -1;
-  }
-
-  SwapInfo swapInfo1 = {storage, &swapCounters[SWAP1]};
-  SwapInfo swapInfo2 = {storage, &swapCounters[SWAP2]};
-  SwapInfo swapInfo3 = {storage, &swapCounters[SWAP3]};
-
   if (pthread_create(&swapThread1, NULL, countSwapPermutations,
-                     &swapInfo1) != 0) {
+                     (void *)storage) != 0) {
     printf("SWAP_PERMUTATIONS_COUNT 1 thread create: %s",
            strerror(errno));
     free(storage);
@@ -268,7 +252,7 @@ int main(int argc, char **argv) {
   }
 
   if (pthread_create(&swapThread2, NULL, countSwapPermutations,
-                     &swapInfo2) != 0) {
+                     (void *)storage) != 0) {
     printf("SWAP_PERMUTATIONS_COUNT 2 thread create: %s",
            strerror(errno));
     free(storage);
@@ -276,7 +260,7 @@ int main(int argc, char **argv) {
   }
 
   if (pthread_create(&swapThread3, NULL, countSwapPermutations,
-                     &swapInfo3) != 0) {
+                     (void *)storage) != 0) {
     printf("SWAP_PERMUTATIONS_COUNT 3 thread create: %s",
            strerror(errno));
     free(storage);
@@ -284,7 +268,7 @@ int main(int argc, char **argv) {
   }
 
   pthread_t display;
-  if (pthread_create(&display, NULL, countMonitor, swapCounters) !=
+  if (pthread_create(&display, NULL, countMonitor, (void *)storage) !=
       0) {
     printf("display thread create: %s", strerror(errno));
     free(storage);

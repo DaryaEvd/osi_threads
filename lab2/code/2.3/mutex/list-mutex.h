@@ -19,11 +19,6 @@ typedef struct _Storage {
   int capacity;
 } Storage;
 
-// typedef struct _SwapInfo {
-//   Storage *storage;
-//   int *swapCounter;
-// } SwapInfo;
-
 /* ------------- strorage & node functions ------------- */
 
 Storage *createStorage(int capacity);

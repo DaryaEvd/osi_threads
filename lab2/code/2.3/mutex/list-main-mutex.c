@@ -73,8 +73,6 @@ void countPairs(Storage *storage,
         }
       } else if (curr == NULL) {
         break;
-      } else {
-        curr = curr->next;
       }
     }
     if (compare == &increasingLengthCompare) {
@@ -110,6 +108,7 @@ void *countSwapPermutations(void *data) {
   Storage *storage = (Storage *)data;
 
   while (1) {
+
     Node *curr1 = storage->first;
     if (curr1 == NULL || curr1->next == NULL ||
         curr1->next->next == NULL) {
@@ -119,6 +118,7 @@ void *countSwapPermutations(void *data) {
     Node *curr2;
     Node *curr3;
     Node *tmp;
+
     while (1) {
       int willSwap = (rand() % COEFF_OF_SWAPPING == 0);
 
