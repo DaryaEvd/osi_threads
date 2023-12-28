@@ -17,7 +17,7 @@ Storage *createStorage(int capacity) {
   return storage;
 }
 
-void initRWlock(Storage *storage, Node *node) {
+void initMutex(Storage *storage, Node *node) {
   int errMutexAttrInit = pthread_mutexattr_init(&node->mutexAttr);
   if (errMutexAttrInit) {
     printf("mutex attributes init err: %s", strerror(errno));
@@ -56,7 +56,7 @@ void appendNewNode(Storage *storage, const char *value) {
   strncpy(newNode->value, value, MAX_STRING_LENGTH);
   newNode->value[MAX_STRING_LENGTH - 1] = '\0';
 
-  initRWlock(storage, newNode);
+  initMutex(storage, newNode);
 }
 
 void generateValuesInStorage(Storage *storage) {

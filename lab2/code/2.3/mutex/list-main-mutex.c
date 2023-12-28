@@ -16,13 +16,19 @@
 
 #define COEFF_OF_SWAPPING 8
 
-int INCREASING_LENGTH_COUNT = 0;
-int DECREASING_LENGTH_COUNT = 0;
-int EQUAL_LENGTH_COUNT = 0;
+int INCREASING_COMPARE_COUNT = 0;
+int DECREASING_COMPARE_COUNT = 0;
+int EQUAL_COMPARE_COUNT = 0;
+
 int SWAP_PERMUTATIONS_COUNT = 0;
 
+int INCREASING_ITERATIONS_COUNT = 0;
+int DECREASING_ITERATIONS_COUNT = 0;
+int EQUAL_ITERATIONS_COUNT = 0;
+
 void execMutexlock(pthread_mutex_t *mutex, Storage *storage) {
-  if (pthread_mutex_lock(mutex)) {
+  if (pthread_mutex_lock(mutex) != 0) {
+    printf("haha clown\n");
     printf("pthread_mutex_lock() error: %s \n", strerror(errno));
     destroyStorage(storage);
     abort();
@@ -37,12 +43,15 @@ void execMutexUnlock(pthread_mutex_t *mutex, Storage *storage) {
   }
 }
 
-void countPairs(Storage *storage,
-                int (*compare)(const char *, const char *)) {
+void countPairsWithCompare(Storage *storage,
+                           int (*compare)(const char *, const char *),
+                           volatile int *iterationsCount,
+                           volatile int *compareCount) {
   if (storage->first == NULL || storage->first->next == NULL) {
-    printf("Not enough elems in storage to compare\n");
+    printf("Not enough elems in storage\n");
     return;
   }
+
   while (1) {
     Node *curr = storage->first;
     Node *curr2;
@@ -54,17 +63,16 @@ void countPairs(Storage *storage,
           execMutexlock(&curr->next->sync, storage);
           volatile int amountPair = 0;
           curr2 = curr->next;
-
-          if (compare(curr->value, curr2->value) == 0) {
+          if (compare(curr->value, curr2->value)) {
             amountPair++;
           }
-
           tmp = curr;
           curr = curr->next;
 
           execMutexUnlock(&tmp->sync, storage);
           execMutexUnlock(&curr->sync, storage);
 
+          *compareCount += amountPair;
         } else {
           tmp = curr;
           curr = curr->next;
@@ -73,33 +81,35 @@ void countPairs(Storage *storage,
         }
       } else if (curr == NULL) {
         break;
+      } else {
+        curr = curr->next;
       }
     }
-    if (compare == &increasingLengthCompare) {
-      INCREASING_LENGTH_COUNT++;
-    } else if (compare == &decreasingLengthCompare) {
-      DECREASING_LENGTH_COUNT++;
-    } else { // if (compare == &equalLengthCompare)
-      EQUAL_LENGTH_COUNT++;
-    }
+    (*iterationsCount)++;
   }
 }
 
 void *countIncreasingLengthPairs(void *data) {
   Storage *storage = (Storage *)data;
-  countPairs(storage, &increasingLengthCompare);
+  countPairsWithCompare(storage, &increasingLengthCompare,
+                        &INCREASING_ITERATIONS_COUNT,
+                        &INCREASING_COMPARE_COUNT);
   return NULL;
 }
 
 void *countDecreasingLengthPairs(void *data) {
   Storage *storage = (Storage *)data;
-  countPairs(storage, &decreasingLengthCompare);
+  countPairsWithCompare(storage, &decreasingLengthCompare,
+                        &DECREASING_ITERATIONS_COUNT,
+                        &DECREASING_COMPARE_COUNT);
   return NULL;
 }
 
 void *countEqualLengthPairs(void *data) {
   Storage *storage = (Storage *)data;
-  countPairs(storage, &equalLengthCompare);
+  countPairsWithCompare(storage, &equalLengthCompare,
+                        &EQUAL_ITERATIONS_COUNT,
+                        &EQUAL_COMPARE_COUNT);
   return NULL;
 }
 
@@ -187,15 +197,17 @@ void *countSwapPermutations(void *data) {
 
 void *countMonitor(void *arg) {
   while (1) {
-    printf("incr: %d, decr: %d, equal: %d, swap: %d \n",
-           INCREASING_LENGTH_COUNT, DECREASING_LENGTH_COUNT,
-           EQUAL_LENGTH_COUNT, SWAP_PERMUTATIONS_COUNT);
-
+    printf("||--- incr: %d, decr: %d, equal: %d, swap: %d \n",
+           INCREASING_COMPARE_COUNT, DECREASING_COMPARE_COUNT,
+           EQUAL_COMPARE_COUNT, SWAP_PERMUTATIONS_COUNT);
+    printf("   iters --- incr iter: %d, decr iter: %d, equal iter: "
+           "%d \n ",
+           INCREASING_ITERATIONS_COUNT, DECREASING_ITERATIONS_COUNT,
+           EQUAL_ITERATIONS_COUNT);
     sleep(1);
   }
   return NULL;
 }
-
 int main(int argc, char **argv) {
   if (argc != 2) {
     printf("Usage: %s <nodes count>\n", argv[0]);

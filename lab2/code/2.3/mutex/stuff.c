@@ -20,7 +20,6 @@ char *generateRandomString(char *randomStr) {
   return randomStr;
 }
 
-
 int increasingLengthCompare(const char *str1, const char *str2) {
   return strlen(str1) > strlen(str2);
 }
