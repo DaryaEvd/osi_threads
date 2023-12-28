@@ -9,8 +9,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#define SWAPS_AMOUNT 3
-
 #define COEFF_OF_SWAPPING 8
 
 int INCREASING_COMPARE_COUNT = 0;

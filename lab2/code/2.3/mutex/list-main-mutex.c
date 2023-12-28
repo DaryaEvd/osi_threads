@@ -9,11 +9,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#define SWAPS_AMOUNT 3
-#define SWAP1 0
-#define SWAP2 1
-#define SWAP3 2
-
 #define COEFF_OF_SWAPPING 8
 
 int INCREASING_COMPARE_COUNT = 0;
