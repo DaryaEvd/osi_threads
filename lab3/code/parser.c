@@ -34,7 +34,7 @@ int parseHttpRequest(char *buffer, ssize_t bufferLength, char *ip,
   } else if (errorParse == -2) {
     printf("your request is not from browser. Go on!\n");
   } else {
-    printf("you're a user agent. Go on!");
+    printf("your request is from browser. Go on!\n");
   }
 
   displayParsedRequestData(errorParse, request);
