@@ -279,41 +279,41 @@ int main(int argc, char **argv) {
     return -1;
   }
 
-  // if (pthread_join(incrementThread, NULL) != 0) {
-  //   printf("incr thread join err: %s", strerror(errno));
-  //   destroyStorage(storage);
-  //   return -1;
-  // }
+  if (pthread_join(incrementThread, NULL) != 0) {
+    printf("incr thread join err: %s", strerror(errno));
+    destroyStorage(storage);
+    return -1;
+  }
 
-  // if (pthread_join(decrementThread, NULL) != 0) {
-  //   printf("decr thread join err: %s", strerror(errno));
-  //   destroyStorage(storage);
-  //   return -1;
-  // }
+  if (pthread_join(decrementThread, NULL) != 0) {
+    printf("decr thread join err: %s", strerror(errno));
+    destroyStorage(storage);
+    return -1;
+  }
 
-  // if (pthread_join(equalThread, NULL) != 0) {
-  //   printf("equal thread join err: %s", strerror(errno));
-  //   destroyStorage(storage);
-  //   return -1;
-  // }
+  if (pthread_join(equalThread, NULL) != 0) {
+    printf("equal thread join err: %s", strerror(errno));
+    destroyStorage(storage);
+    return -1;
+  }
 
-  // if (pthread_join(swapThread1, NULL) != 0) {
-  //   printf("swap thread1 join err: %s", strerror(errno));
-  //   destroyStorage(storage);
-  //   return -1;
-  // }
+  if (pthread_join(swapThread1, NULL) != 0) {
+    printf("swap thread1 join err: %s", strerror(errno));
+    destroyStorage(storage);
+    return -1;
+  }
 
-  // if (pthread_join(swapThread2, NULL) != 0) {
-  //   printf("swap thread2 join err: %s", strerror(errno));
-  //   destroyStorage(storage);
-  //   return -1;
-  // }
+  if (pthread_join(swapThread2, NULL) != 0) {
+    printf("swap thread2 join err: %s", strerror(errno));
+    destroyStorage(storage);
+    return -1;
+  }
 
-  // if (pthread_join(swapThread3, NULL) != 0) {
-  //   printf("swap thread3 join err: %s", strerror(errno));
-  //   destroyStorage(storage);
-  //   return -1;
-  // }
+  if (pthread_join(swapThread3, NULL) != 0) {
+    printf("swap thread3 join err: %s", strerror(errno));
+    destroyStorage(storage);
+    return -1;
+  }
 
   if (pthread_join(display, NULL) != 0) {
     printf("diplay thread join err: %s", strerror(errno));
