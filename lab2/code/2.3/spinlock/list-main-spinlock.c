@@ -16,10 +16,15 @@
 
 #define COEFF_OF_SWAPPING 8
 
-int INCREASING_LENGTH_COUNT = 0;
-int DECREASING_LENGTH_COUNT = 0;
-int EQUAL_LENGTH_COUNT = 0;
+int INCREASING_COMPARE_COUNT = 0;
+int DECREASING_COMPARE_COUNT = 0;
+int EQUAL_COMPARE_COUNT = 0;
+
 int SWAP_PERMUTATIONS_COUNT = 0;
+
+int INCREASING_ITERATIONS_COUNT = 0;
+int DECREASING_ITERATIONS_COUNT = 0;
+int EQUAL_ITERATIONS_COUNT = 0;
 
 void createSpinlock(pthread_spinlock_t *q) {
   if (pthread_spin_lock(q)) {
@@ -35,73 +40,66 @@ void destroySpinlock(pthread_spinlock_t *q) {
   }
 }
 
-void countPairs(Storage *storage,
-                int (*compare)(const char *, const char *)) {
+int countPairs(Storage *storage,
+               int (*compare)(const char *, const char *)) {
+  int pairCount = 0;
   if (storage->first == NULL || storage->first->next == NULL) {
-    printf("Not enough elems in storage to compare\n");
-    return;
+    printf("Not enough elems in storage\n");
+    return pairCount;
   }
-  while (1) {
-    Node *curr = storage->first;
-    Node *curr2;
-    Node *tmp;
-    while (1) {
-      if (curr != NULL) {
-        createSpinlock(&curr->sync);
-        if (curr->next != NULL) {
-          createSpinlock(&curr->next->sync);
-          volatile int amountPair = 0;
-          curr2 = curr->next;
 
-          if (compare(curr->value, curr2->value) == 0) {
-            amountPair++;
-          }
+  Node *curr = storage->first;
+  Node *curr2;
+  while (curr != NULL && curr->next != NULL) {
+    createSpinlock(&curr->sync);
+    createSpinlock(&curr->next->sync);
 
-          tmp = curr;
-          curr = curr->next;
-
-          destroySpinlock(&tmp->sync);
-          destroySpinlock(&curr->sync);
-        } else {
-          tmp = curr;
-          curr = curr->next;
-
-          destroySpinlock(&tmp->sync);
-        }
-      } else if (curr == NULL) {
-        break;
-      }
+    curr2 = curr->next;
+    if (compare(curr->value, curr2->value)) {
+      pairCount++;
     }
-    if (compare == &increasingLengthCompare) {
-      INCREASING_LENGTH_COUNT++;
-    } else if (compare == &decreasingLengthCompare) {
-      DECREASING_LENGTH_COUNT++;
-    } else { // if (compare == &equalLengthCompare)
-      EQUAL_LENGTH_COUNT++;
-    }
+
+    Node *tmp = curr;
+    curr = curr->next;
+
+    destroySpinlock(&tmp->sync);
+    destroySpinlock(&curr2->sync);
   }
+
+  return pairCount;
 }
 
 void *countIncreasingLengthPairs(void *data) {
   Storage *storage = (Storage *)data;
-  countPairs(storage, &increasingLengthCompare);
+  while (1) {
+    int pairCount = countPairs(storage, &increasingLengthCompare);
+    INCREASING_ITERATIONS_COUNT++;
+    INCREASING_COMPARE_COUNT += pairCount;
+  }
   return NULL;
 }
 
 void *countDecreasingLengthPairs(void *data) {
   Storage *storage = (Storage *)data;
-  countPairs(storage, &decreasingLengthCompare);
+  while (1) {
+    int pairCount = countPairs(storage, &decreasingLengthCompare);
+    DECREASING_ITERATIONS_COUNT++;
+    DECREASING_COMPARE_COUNT += pairCount;
+  }
   return NULL;
 }
 
 void *countEqualLengthPairs(void *data) {
   Storage *storage = (Storage *)data;
-  countPairs(storage, &equalLengthCompare);
+  while (1) {
+    int pairCount = countPairs(storage, &equalLengthCompare);
+    EQUAL_ITERATIONS_COUNT++;
+    EQUAL_COMPARE_COUNT += pairCount;
+  }
   return NULL;
 }
 
 void *countSwapPermutations(void *data) {
-
   Storage *storage = (Storage *)data;
 
   while (1) {
@@ -183,10 +181,13 @@ void *countSwapPermutations(void *data) {
 
 void *countMonitor(void *arg) {
   while (1) {
-    printf("incr: %d, decr: %d, equal: %d, swap: %d \n",
-           INCREASING_LENGTH_COUNT, DECREASING_LENGTH_COUNT,
-           EQUAL_LENGTH_COUNT, SWAP_PERMUTATIONS_COUNT);
-
+    printf("||--- incr: %d, decr: %d, equal: %d, swap: %d \n",
+           INCREASING_COMPARE_COUNT, DECREASING_COMPARE_COUNT,
+           EQUAL_COMPARE_COUNT, SWAP_PERMUTATIONS_COUNT);
+    printf("   iters --- incr iter: %d, decr iter: %d, equal iter: "
+           "%d \n ",
+           INCREASING_ITERATIONS_COUNT, DECREASING_ITERATIONS_COUNT,
+           EQUAL_ITERATIONS_COUNT);
     sleep(1);
   }
   return NULL;
