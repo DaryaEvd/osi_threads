@@ -25,7 +25,6 @@ typedef struct _ThreadInfo {
   void *arg;
 } ThreadInfo;
 
-
 /* ------------- strorage & node functions ------------- */
 
 Storage *createStorage(int capacity);

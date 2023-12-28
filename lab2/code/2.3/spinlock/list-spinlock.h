@@ -18,6 +18,12 @@ typedef struct _Storage {
   int capacity;
 } Storage;
 
+typedef struct _ThreadInfo {
+  pthread_t thread;
+  void *(*startRoutine)(void *);
+  void *arg;
+} ThreadInfo;
+
 /* ------------- strorage & node functions ------------- */
 
 Storage *createStorage(int capacity);
