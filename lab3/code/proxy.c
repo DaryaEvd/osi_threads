@@ -119,6 +119,10 @@ void *handleRequestConnection(void *args) {
     return NULL;
   }
 
+  printf("--- BUFFER STARTS --- \n");
+  printf("%s", buffer);
+  printf("--- BUFFER ENDS ------\n\n");
+
   int resOfParsing = parseHttpRequest(
       buffer, readBytesFromClient, hostIP, sizeof(hostIP), hostPort);
   if (resOfParsing == -1) {

@@ -33,29 +33,22 @@ int parseHttpRequest(char *buffer, ssize_t bufferLength, char *ip,
     return -1;
   }
 
+  printf("request is %d bytes long\n", errorParse);
+  printf("method is %.*s\n", (int)request->lengthMethod,
+         request->method);
+  printf("path is %.*s\n", (int)request->lengthPath, request->path);
+  printf("HTTP version is 1.%d\n", request->minorVer);
+  printf("number of headers: %ld\n", request->numHeaders);
+  
   // here we prevent all methods except GET
-  char *startOfSecondWordInBuffer = strchr(buffer, ' ');
-  size_t lengthOfFirst = startOfSecondWordInBuffer - buffer;
-  char *firstInBuffer =
-      (char *)malloc((lengthOfFirst + 1) * sizeof(char));
-  if (!firstInBuffer) {
-    printf("parseHttpRequest: malloc() '%s'", strerror(errno));
-    free(request);
-    return -1;
-  }
-  strncpy(firstInBuffer, buffer, lengthOfFirst);
-
-  if (!(firstInBuffer[0] == 'G' && firstInBuffer[1] == 'E' &&
-        firstInBuffer[2] == 'T')) {
+  if (!(request->method[0] == 'G' && request->method[1] == 'E' &&
+        request->method[2] == 'T')) {
     printf("you can't exec commands except GET !!!! \n");
     free(request);
-    free(firstInBuffer);
     return -1;
   }
 
-  free(firstInBuffer);
-
-  char currArrHeaders[HEADER_SIZE];
+  char currArrHeaders[HEADER_SIZE] = {0}; // todo
   displayHeader(request->headers, request->numHeaders, buffer,
                 currArrHeaders, request->lengthBuf);
 
@@ -63,7 +56,13 @@ int parseHttpRequest(char *buffer, ssize_t bufferLength, char *ip,
 
   parseHeader(currArrHeaders, ip, port);
 
+  printf("################### cur header:\n%s\n###\n",
+         currArrHeaders);
+
+  sscanf(request->path, "http://%99[^/]", ip);
+
   printf("------trying to resolve ip: '%s'\n", ip);
+  printf("-------on port '%s'\n", port);
 
   struct addrinfo *result = NULL;
   struct addrinfo hints;
@@ -90,7 +89,9 @@ void displayHeader(struct phr_header *headers, size_t numHeaders,
     }
   }
 
-  printf("headers: '%s'\n", headers->name);
+  if (headers->name != NULL) {
+    printf("headers are:\n %s\n", headers->name);
+  }
 
   sprintf(currArrHeaders, "%.*s", (int)headers[i].value_len,
           headers[i].value);
