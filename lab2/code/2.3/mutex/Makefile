@@ -3,8 +3,6 @@ SRCS_1_1 = list-main-mutex.c
 SRCS_1_2 = list-implement-mutex.c
 SRCS_1_3 = stuff.c
 
-# TARGET_2 = list-spinlock.o
-# SRCS_2_1 = list-main-spinlock.c 
 
 CC=gcc
 RM=rm
