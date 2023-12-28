@@ -3,10 +3,9 @@ SRCS_1_1 = list-main-mutex.c
 SRCS_1_2 = list-implement-mutex.c
 SRCS_1_3 = stuff.c
 
-
 CC=gcc
 RM=rm
-CFLAGS= -g -Wall -fsanitize=address 
+CFLAGS= -g -Wall 
 LIBS=-lpthread
 INCLUDE_DIR="."
 

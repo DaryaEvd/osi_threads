@@ -40,62 +40,73 @@ void destroySpinlock(pthread_spinlock_t *q) {
   }
 }
 
-int countPairs(Storage *storage,
-               int (*compare)(const char *, const char *)) {
-  int pairCount = 0;
+void countPairsWithCompare(Storage *storage,
+                           int (*compare)(const char *, const char *),
+                           volatile int *iterationsCount,
+                           volatile int *compareCount) {
   if (storage->first == NULL || storage->first->next == NULL) {
     printf("Not enough elems in storage\n");
-    return pairCount;
+    return;
   }
 
-  Node *curr = storage->first;
-  Node *curr2;
-  while (curr != NULL && curr->next != NULL) {
-    createSpinlock(&curr->sync);
-    createSpinlock(&curr->next->sync);
+  while (1) {
+    Node *curr = storage->first;
+    Node *curr2;
+    Node *tmp;
+    while (1) {
+      if (curr != NULL) {
+        createSpinlock(&curr->sync);
+        if (curr->next != NULL) {
+          createSpinlock(&curr->next->sync);
+          volatile int amountPair = 0;
+          curr2 = curr->next;
+          if (compare(curr->value, curr2->value)) {
+            amountPair++;
+          }
+          tmp = curr;
+          curr = curr->next;
 
-    curr2 = curr->next;
-    if (compare(curr->value, curr2->value)) {
-      pairCount++;
+          destroySpinlock(&tmp->sync);
+          destroySpinlock(&curr->sync);
+
+          *compareCount += amountPair;
+        } else {
+          tmp = curr;
+          curr = curr->next;
+
+          destroySpinlock(&tmp->sync);
+        }
+      } else if (curr == NULL) {
+        break;
+      } else {
+        curr = curr->next;
+      }
     }
-
-    Node *tmp = curr;
-    curr = curr->next;
-
-    destroySpinlock(&tmp->sync);
-    destroySpinlock(&curr2->sync);
+    (*iterationsCount)++;
   }
-
-  return pairCount;
 }
 
 void *countIncreasingLengthPairs(void *data) {
   Storage *storage = (Storage *)data;
-  while (1) {
-    int pairCount = countPairs(storage, &increasingLengthCompare);
-    INCREASING_ITERATIONS_COUNT++;
-    INCREASING_COMPARE_COUNT += pairCount;
-  }
+  countPairsWithCompare(storage, &increasingLengthCompare,
+                        &INCREASING_ITERATIONS_COUNT,
+                        &INCREASING_COMPARE_COUNT);
   return NULL;
 }
 
 void *countDecreasingLengthPairs(void *data) {
   Storage *storage = (Storage *)data;
-  while (1) {
-    int pairCount = countPairs(storage, &decreasingLengthCompare);
-    DECREASING_ITERATIONS_COUNT++;
-    DECREASING_COMPARE_COUNT += pairCount;
-  }
+  countPairsWithCompare(storage, &decreasingLengthCompare,
+                        &DECREASING_ITERATIONS_COUNT,
+                        &DECREASING_COMPARE_COUNT);
   return NULL;
 }
 
 void *countEqualLengthPairs(void *data) {
   Storage *storage = (Storage *)data;
-  while (1) {
-    int pairCount = countPairs(storage, &equalLengthCompare);
-    EQUAL_ITERATIONS_COUNT++;
-    EQUAL_COMPARE_COUNT += pairCount;
-  }
+  countPairsWithCompare(storage, &equalLengthCompare,
+                        &EQUAL_ITERATIONS_COUNT,
+                        &EQUAL_COMPARE_COUNT);
   return NULL;
 }
 
@@ -113,6 +124,7 @@ void *countSwapPermutations(void *data) {
     Node *curr2;
     Node *curr3;
     Node *tmp;
+
     while (1) {
       int willSwap = (rand() % COEFF_OF_SWAPPING == 0);
 
@@ -208,6 +220,7 @@ int main(int argc, char **argv) {
 
   int countNodes = atoi(argv[1]);
 
+ 
   srand(time(0));
 
   Storage *storage = createStorage(countNodes);

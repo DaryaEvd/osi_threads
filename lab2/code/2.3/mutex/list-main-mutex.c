@@ -28,8 +28,7 @@ int EQUAL_ITERATIONS_COUNT = 0;
 
 void execMutexlock(pthread_mutex_t *mutex, Storage *storage) {
   if (pthread_mutex_lock(mutex) != 0) {
-    printf("haha clown\n");
-    printf("pthread_mutex_lock() error: %s \n", strerror(errno));
+     printf("pthread_mutex_lock() error: %s \n", strerror(errno));
     destroyStorage(storage);
     abort();
   }
