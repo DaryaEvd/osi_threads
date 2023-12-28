@@ -133,7 +133,7 @@ void *handleRequestConnection(void *args) {
     return NULL;
   }
 
-  printf("-------trying connect to host: '%s:%s' on socket %d\n",
+  printf("-------trying connect to host: '%s:%s' on socket '%d'\n",
          hostIP, hostPort, clientSocketFD);
 
   hostSocketFD = socket(AF_INET, SOCK_STREAM, 0);
@@ -171,7 +171,7 @@ void *handleRequestConnection(void *args) {
     return NULL;
   }
 
-  printf("connection to host '%s:%s' on socket %d has been "
+  printf("connection to host '%s:%s' on socket '%d' has been "
          "successful\n",
          hostIP, hostPort, clientSocketFD);
 
@@ -187,7 +187,6 @@ void *handleRequestConnection(void *args) {
   printf("--- closing connection on socket %d\n", clientSocketFD);
 
   free(buffer);
-
   close(clientSocketFD);
   close(hostSocketFD);
   return NULL;

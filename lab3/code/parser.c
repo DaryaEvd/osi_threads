@@ -31,15 +31,14 @@ int parseHttpRequest(char *buffer, ssize_t bufferLength, char *ip,
            strerror(errno));
     free(request);
     return -1;
+  } else if (errorParse == -2) {
+    printf("your request is not from browser. Go on!\n");
+  } else {
+    printf("you're a user agent. Go on!");
   }
 
-  printf("request is %d bytes long\n", errorParse);
-  printf("method is %.*s\n", (int)request->lengthMethod,
-         request->method);
-  printf("path is %.*s\n", (int)request->lengthPath, request->path);
-  printf("HTTP version is 1.%d\n", request->minorVer);
-  printf("number of headers: %ld\n", request->numHeaders);
-  
+  displayParsedRequestData(errorParse, request);
+
   // here we prevent all methods except GET
   if (!(request->method[0] == 'G' && request->method[1] == 'E' &&
         request->method[2] == 'T')) {
@@ -48,18 +47,17 @@ int parseHttpRequest(char *buffer, ssize_t bufferLength, char *ip,
     return -1;
   }
 
-  char currArrHeaders[HEADER_SIZE] = {0}; // todo
-  displayHeader(request->headers, request->numHeaders, buffer,
-                currArrHeaders, request->lengthBuf);
+  char currArrHeaders[HEADER_SIZE] = {0};
+
+  if (request->numHeaders != 0) {
+    displayHeader(request->headers, request->numHeaders, buffer,
+                  currArrHeaders, request->lengthBuf);
+  }
+
+  parseHeaderPort(currArrHeaders, port);
+  sscanf(request->path, "http://%99[^/]", ip);
 
   free(request);
-
-  parseHeader(currArrHeaders, ip, port);
-
-  printf("################### cur header:\n%s\n###\n",
-         currArrHeaders);
-
-  sscanf(request->path, "http://%99[^/]", ip);
 
   printf("------trying to resolve ip: '%s'\n", ip);
   printf("-------on port '%s'\n", port);
@@ -79,34 +77,10 @@ int parseHttpRequest(char *buffer, ssize_t bufferLength, char *ip,
   return 0;
 }
 
-void displayHeader(struct phr_header *headers, size_t numHeaders,
-                   char *buffer, char *currArrHeaders,
-                   ssize_t bufLength) {
-  size_t i;
-  for (i = 0; i < numHeaders; i++) {
-    if (strncmp(headers[i].name, "Host", headers[i].name_len) == 0) {
-      break;
-    }
-  }
-
-  if (headers->name != NULL) {
-    printf("headers are:\n %s\n", headers->name);
-  }
-
-  sprintf(currArrHeaders, "%.*s", (int)headers[i].value_len,
-          headers[i].value);
-
-  printf("----- start headers show ---------------------- \n");
-  printf("%s", buffer);
-  printf("--------------------- end headers show ------\n\n");
-}
-
-void parseHeader(char *currArrHeaders, char *ip, char *port) {
+void parseHeaderPort(char *currArrHeaders, char *port) {
   if (strstr(currArrHeaders, ":") != NULL) {
-    strcpy(ip, strtok(currArrHeaders, ":"));
     strcpy(port, strtok(NULL, ":"));
   } else {
-    strcpy(ip, currArrHeaders);
     strcpy(port, BASE_PORT_HTTP);
   }
 }
@@ -145,4 +119,25 @@ int resolveDomainName(struct addrinfo hints, char *ip, int lengthIP,
 
   freeaddrinfo(result);
   return ret;
+}
+
+void displayHeader(struct phr_header *headers, size_t numHeaders,
+                   char *buffer, char *currArrHeaders,
+                   ssize_t bufLength) {
+  printf("----- start headers show ---------------------- \n");
+  printf("%s", buffer);
+  printf("--------------------- end headers show ------\n\n");
+}
+
+void displayParsedRequestData(int numBytes, Request_t *request) {
+  printf("### res of parsing request starts ///\n");
+
+  printf("request is '%d' bytes long\n", numBytes);
+  printf("method is '%.*s'\n", (int)request->lengthMethod,
+         request->method);
+  printf("path is '%.*s'\n", (int)request->lengthPath, request->path);
+  printf("HTTP version is '1.%d'\n", request->minorVer);
+  printf("number of headers: '%ld'\n", request->numHeaders);
+
+  printf("/// res of parsing request ends ###\n\n");
 }
